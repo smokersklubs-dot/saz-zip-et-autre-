@@ -3,294 +3,280 @@ import {
   BAG_TYPES_CATALOG,
   BagTypeKey,
   PrintTechnology,
-  QuoteBreakdown,
   SINGLE_LAYER_IMAGE_URL
 } from '../pricingEngine';
-import { Layers, Maximize2, ShieldCheck, Clock, Sparkles } from 'lucide-react';
+import { Check, Layers, Sparkles } from 'lucide-react';
 
 interface StudioShowcaseProps {
   bagType: BagTypeKey;
-  onSelectBagType: (key: BagTypeKey) => void;
-  isSingleLayer: boolean;
-  onToggleSingleLayer: (val: boolean) => void;
   technology: PrintTechnology;
-  onSelectTechnology: (tech: PrintTechnology) => void;
+  isSingleLayer: boolean;
+  hasZip: boolean;
   widthCm: number;
   heightCm: number;
   bottomCm: number;
   sideGussetCm: number;
-  hasZip: boolean;
-  quote: QuoteBreakdown;
+  thicknessMicrons: number;
+  unitWeightG: number;
+  leadTimeDays: number;
   presetName: string;
+  onSelectBagType: (key: BagTypeKey) => void;
+  onToggleSingleLayer: (single: boolean) => void;
+  onChangeTechnology: (tech: PrintTechnology) => void;
 }
 
 export const StudioShowcase: React.FC<StudioShowcaseProps> = ({
   bagType,
-  onSelectBagType,
-  isSingleLayer,
-  onToggleSingleLayer,
   technology,
-  onSelectTechnology,
+  isSingleLayer,
+  hasZip,
   widthCm,
   heightCm,
   bottomCm,
   sideGussetCm,
-  hasZip,
-  quote,
-  presetName
+  thicknessMicrons,
+  unitWeightG,
+  leadTimeDays,
+  presetName,
+  onSelectBagType,
+  onToggleSingleLayer,
+  onChangeTechnology
 }) => {
   const activeBag = BAG_TYPES_CATALOG.find(b => b.key === bagType) || BAG_TYPES_CATALOG[0];
-  const heroImageUrl = isSingleLayer ? SINGLE_LAYER_IMAGE_URL : activeBag.imageUrl;
-
-  const activeGussetLabel = activeBag.hasBottomGusset && activeBag.hasSideGusset
-    ? `${widthCm} × ${heightCm} + ${bottomCm}/${sideGussetCm} cm`
-    : activeBag.hasBottomGusset
-      ? `${widthCm} × ${heightCm} + ${bottomCm} cm`
-      : activeBag.hasSideGusset
-        ? `${widthCm} × ${heightCm} × ${sideGussetCm} cm`
-        : `${widthCm} × ${heightCm} cm`;
+  const heroImage = isSingleLayer ? SINGLE_LAYER_IMAGE_URL : activeBag.imageUrl;
+  const isGravure = technology === 'gravure';
 
   return (
-    <div className="space-y-5">
-      {/* Carte Vitrine Principale — Fond Albâtre Atelier */}
-      <div className="bg-white border border-maison-border rounded-2xl shadow-atelier overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-12">
-          {/* Colonne Visuel Studio Nano Banana */}
-          <div className="md:col-span-5 relative bg-[#F3EFE7] flex flex-col items-center justify-center p-6 border-b md:border-b-0 md:border-r border-maison-border min-h-[290px]">
-            <div className="absolute top-3.5 left-3.5 flex flex-wrap items-center gap-1.5 z-10">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/90 backdrop-blur-sm border border-maison-border text-maison-ink shadow-sm">
-                <span className={`w-1.5 h-1.5 rounded-full ${technology === 'digital' ? 'bg-maison-emerald' : 'bg-maison-brass'}`} />
-                {technology === 'digital' ? 'Numérique HD' : 'Héliogravure'}
-              </span>
-              {isSingleLayer && (
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#171614] text-white">
-                  Monocouche
-                </span>
-              )}
+    <div className="space-y-3">
+      {/* PANNEAU VISUEL HÉRO + CONFIGURATION FILIÈRE */}
+      <div className={`bg-[#0c1322] border rounded-2xl p-4 shadow-cockpit transition-colors ${
+        isGravure ? 'border-indigo-500/35' : 'border-cyan-500/35'
+      }`}>
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+          {/* Socle Studio Nano Banana (#F4F1EA pour sublimer le détourage studio) */}
+          <div className="sm:col-span-5 bg-[#F4F1EA] rounded-xl border border-slate-700/60 overflow-hidden relative flex items-center justify-center p-3 h-48 sm:h-52 shadow-inner">
+            <img
+              src={heroImage}
+              alt={isSingleLayer ? 'Sachet Monocouche Translucide' : activeBag.nameFr}
+              className="max-h-full w-auto object-contain transition-transform duration-300 hover:scale-[1.03]"
+            />
+            <div className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1.5 shadow-sm border ${
+              isGravure
+                ? 'bg-indigo-950/90 text-indigo-200 border-indigo-400/50'
+                : 'bg-cyan-950/90 text-cyan-200 border-cyan-400/50'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${isGravure ? 'bg-indigo-400' : 'bg-cyan-400'}`} />
+              {isGravure ? 'Hélio Cylindres' : 'Numérique HD'}
             </div>
-
-            <div className="w-full max-w-[230px] aspect-square rounded-xl overflow-hidden flex items-center justify-center transition-transform duration-500 hover:scale-[1.03]">
-              <img
-                src={heroImageUrl}
-                alt={activeBag.nameFr}
-                className="w-full h-full object-contain mix-blend-multiply"
-              />
-            </div>
-
-            {/* Cote dimensionnelle architecturale */}
-            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/90 border border-maison-border text-xs font-mono text-maison-ink tabular-nums">
-              <Maximize2 className="w-3.5 h-3.5 text-maison-brass" />
-              <span>{activeGussetLabel}</span>
+            <div className="absolute bottom-2.5 left-2.5 right-2.5 flex justify-center">
+              <div className="bg-[#080d18]/90 backdrop-blur border border-slate-700 rounded-full px-2.5 py-0.5 text-[10px] font-mono text-cyan-300 shadow-sm tabular-nums">
+                {widthCm} × {heightCm}
+                {activeBag.hasBottomGusset ? ` + ${bottomCm}` : ''}
+                {activeBag.hasSideGusset && !activeBag.hasBottomGusset ? ` + ${sideGussetCm}` : ''} cm
+              </div>
             </div>
           </div>
 
-          {/* Colonne Spécifications Éditoriales & Mode Production */}
-          <div className="md:col-span-7 p-5 sm:p-6 flex flex-col justify-between gap-5">
+          {/* Fiche Identité & Commutateurs Principaux */}
+          <div className="sm:col-span-7 flex flex-col justify-between space-y-3">
             <div>
-              <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-maison-brass font-semibold">
-                    Structure Sélectionnée
-                  </p>
-                  <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-maison-ink mt-0.5 leading-tight">
-                    {isSingleLayer ? `${activeBag.shortFr} — Éco Monocouche` : activeBag.nameFr}
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                    Structure Active
+                  </span>
+                  <h2 className="font-serif text-xl sm:text-2xl font-semibold text-white tracking-tight leading-tight mt-0.5">
+                    {isSingleLayer ? `${activeBag.shortFr} · Monocouche` : activeBag.nameFr}
                   </h2>
                 </div>
-                {hasZip && (
-                  <span className="shrink-0 px-2.5 py-1 rounded-md bg-maison-brassLight border border-[#E3D2B4] text-[#7A5928] text-[11px] font-semibold">
-                    Fermeture Zip
-                  </span>
-                )}
+                <span className={`shrink-0 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
+                  hasZip
+                    ? 'bg-amber-500/15 border-amber-500/40 text-amber-300'
+                    : 'bg-slate-800/80 border-slate-700 text-slate-400'
+                }`}>
+                  {hasZip ? 'Fermeture Zip' : 'Sans Zip'}
+                </span>
               </div>
-
-              <p className="text-sm text-maison-slate mt-2 leading-relaxed">
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                 {activeBag.description}
               </p>
+            </div>
 
-              {/* Télémétrie Atelier Synthétique */}
-              <div className="grid grid-cols-3 gap-2.5 mt-4">
-                <div className="bg-maison-canvas/70 border border-maison-border rounded-xl p-2.5">
-                  <div className="flex items-center gap-1 text-[11px] text-maison-muted font-medium">
-                    <Layers className="w-3.5 h-3.5 text-maison-brass" />
-                    Épaisseur
-                  </div>
-                  <div className="font-mono text-sm font-semibold text-maison-ink mt-1 tabular-nums">
-                    {quote.imposition.actualThicknessMicrons} µm
-                  </div>
+            {/* 3 Tuiles Physiques Color-Coded */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-[#080d18] rounded-xl px-2.5 py-2 border border-slate-800">
+                <div className="text-[9px] text-slate-400 uppercase font-semibold">Épaisseur</div>
+                <div className="font-mono text-xs sm:text-sm font-bold text-cyan-300 tabular-nums mt-0.5">
+                  {thicknessMicrons} µm
                 </div>
-                <div className="bg-maison-canvas/70 border border-maison-border rounded-xl p-2.5">
-                  <div className="flex items-center gap-1 text-[11px] text-maison-muted font-medium">
-                    <ShieldCheck className="w-3.5 h-3.5 text-maison-emerald" />
-                    Poids / u
-                  </div>
-                  <div className="font-mono text-sm font-semibold text-maison-ink mt-1 tabular-nums">
-                    {quote.weightUnitGrams.toFixed(1)} g
-                  </div>
+              </div>
+              <div className="bg-[#080d18] rounded-xl px-2.5 py-2 border border-slate-800">
+                <div className="text-[9px] text-slate-400 uppercase font-semibold">Poids / u</div>
+                <div className="font-mono text-xs sm:text-sm font-bold text-amber-300 tabular-nums mt-0.5">
+                  {unitWeightG.toFixed(2)} g
                 </div>
-                <div className="bg-maison-canvas/70 border border-maison-border rounded-xl p-2.5">
-                  <div className="flex items-center gap-1 text-[11px] text-maison-muted font-medium">
-                    <Clock className="w-3.5 h-3.5 text-maison-slate" />
-                    Délai
-                  </div>
-                  <div className="font-mono text-sm font-semibold text-maison-ink mt-1 tabular-nums">
-                    {quote.imposition.leadTimeDays} jours
-                  </div>
+              </div>
+              <div className="bg-[#080d18] rounded-xl px-2.5 py-2 border border-slate-800">
+                <div className="text-[9px] text-slate-400 uppercase font-semibold">Délai</div>
+                <div className="font-mono text-xs sm:text-sm font-bold text-emerald-300 tabular-nums mt-0.5">
+                  {leadTimeDays} jours
                 </div>
               </div>
             </div>
 
-            {/* Sélecteurs Filière & Complexité Matière */}
-            <div className="space-y-3 pt-3 border-t border-maison-border">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-maison-ink">Filière d'impression</span>
-                <div className="inline-flex rounded-xl bg-maison-canvas p-1 border border-maison-border">
-                  <button
-                    type="button"
-                    onClick={() => onSelectTechnology('digital')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      technology === 'digital'
-                        ? 'bg-[#171614] text-white shadow-sm'
-                        : 'text-maison-slate hover:text-maison-ink'
-                    }`}
-                  >
-                    Numérique (0 cliché)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onSelectTechnology('gravure')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      technology === 'gravure'
-                        ? 'bg-maison-brass text-white shadow-sm'
-                        : 'text-maison-slate hover:text-maison-ink'
-                    }`}
-                  >
-                    Héliogravure (Cylindres)
-                  </button>
-                </div>
-              </div>
+            {/* Commutateur Numérique vs Héliogravure */}
+            <div className="grid grid-cols-2 gap-1.5 bg-[#080d18] p-1 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => onChangeTechnology('digital')}
+                className={`px-2.5 py-1.5 rounded-lg text-left transition-all ${
+                  !isGravure
+                    ? 'bg-cyan-500 text-slate-950 font-bold shadow-glow-cyan'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span className="block text-[11px] leading-tight">Numérique HD</span>
+                <span className={`block text-[9px] font-mono ${!isGravure ? 'text-slate-900' : 'text-slate-500'}`}>
+                  250–10k · 0 cliché
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeTechnology('gravure')}
+                className={`px-2.5 py-1.5 rounded-lg text-left transition-all ${
+                  isGravure
+                    ? 'bg-indigo-500 text-white font-bold shadow-glow-indigo'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span className="block text-[11px] leading-tight">Héliogravure</span>
+                <span className={`block text-[9px] font-mono ${isGravure ? 'text-indigo-100' : 'text-slate-500'}`}>
+                  5k+ · Cylindres cuivre
+                </span>
+              </button>
+            </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-maison-ink">Architecture film</span>
-                <div className="inline-flex rounded-xl bg-maison-canvas p-1 border border-maison-border">
-                  <button
-                    type="button"
-                    onClick={() => onToggleSingleLayer(false)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      !isSingleLayer
-                        ? 'bg-white text-maison-ink shadow-sm border border-maison-border'
-                        : 'text-maison-slate hover:text-maison-ink'
-                    }`}
-                  >
-                    Multicouche Barrière
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onToggleSingleLayer(true)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      isSingleLayer
-                        ? 'bg-white text-maison-ink shadow-sm border border-maison-border'
-                        : 'text-maison-slate hover:text-maison-ink'
-                    }`}
-                  >
-                    Monocouche (1 film)
-                  </button>
-                </div>
+            {/* Architecture Multicouche vs Monocouche */}
+            <div className="flex items-center justify-between gap-2 text-[11px]">
+              <div className="inline-flex rounded-lg bg-[#080d18] p-0.5 border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => onToggleSingleLayer(false)}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    !isSingleLayer
+                      ? 'bg-slate-800 text-cyan-300 border border-slate-700'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Multicouche (2–5)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onToggleSingleLayer(true)}
+                  className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                    isSingleLayer
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Monocouche (1 film)
+                </button>
               </div>
-
-              <div className="text-[11px] text-maison-muted flex items-center gap-1.5 truncate">
-                <Sparkles className="w-3.5 h-3.5 text-maison-brass shrink-0" />
-                <span className="truncate">{isSingleLayer ? 'Film mono-matériau sans contrecollage' : presetName}</span>
-              </div>
+              <span className="text-[10px] text-slate-400 truncate flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-cyan-400 shrink-0" />
+                {isSingleLayer ? '0 passe colle' : presetName.split('(')[0].trim()}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Galerie Visuelle Sélecteur de Formats (Photos Studio Nano Banana) */}
-      <div className="bg-white border border-maison-border rounded-2xl p-4 sm:p-5 shadow-atelier">
-        <div className="flex items-center justify-between mb-3.5">
-          <div>
-            <h3 className="text-sm font-semibold text-maison-ink">Catalogue des Formes</h3>
-            <p className="text-xs text-maison-muted">Sélection visuelle — cliquez sur une silhouette</p>
+      {/* SÉLECTEUR VISUEL DES 8 FORMES NANO BANANA */}
+      <div className="bg-[#0c1322] border border-slate-800/80 rounded-2xl p-3.5 sm:p-4 shadow-cockpit">
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-cyan-400" />
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+              1. Sélection Visuelle des Formes
+            </span>
           </div>
-          <span className="text-[11px] font-mono text-maison-muted tabular-nums">
-            7 Formats + Monocouche
-          </span>
+          <span className="text-[10px] font-mono text-slate-400">7 Formats + Monocouche</span>
         </div>
 
-        <div className="flex md:grid md:grid-cols-4 gap-3 overflow-x-auto md:overflow-visible pb-1 md:pb-0 no-scrollbar snap-x">
-          {BAG_TYPES_CATALOG.map((bag) => {
-            const isSelected = bagType === bag.key && !isSingleLayer;
+        <div className="flex md:grid md:grid-cols-4 gap-2 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1 md:pb-0">
+          {BAG_TYPES_CATALOG.map((item) => {
+            const isSelected = !isSingleLayer && bagType === item.key;
             return (
               <button
-                key={bag.key}
+                key={item.key}
                 type="button"
                 onClick={() => {
                   onToggleSingleLayer(false);
-                  onSelectBagType(bag.key);
+                  onSelectBagType(item.key);
                 }}
-                className={`group shrink-0 w-[132px] md:w-auto snap-start text-left rounded-xl border transition-all overflow-hidden ${
+                className={`snap-start shrink-0 w-[108px] md:w-auto group text-left rounded-xl p-1.5 border transition-all cursor-pointer ${
                   isSelected
-                    ? 'border-[#171614] ring-1 ring-[#171614] bg-maison-canvas/60 shadow-sm'
-                    : 'border-maison-border bg-white hover:border-maison-borderStrong hover:shadow-sm'
+                    ? isGravure
+                      ? 'border-indigo-400 bg-indigo-500/15 shadow-glow-indigo ring-1 ring-indigo-400/50'
+                      : 'border-cyan-400 bg-cyan-500/15 shadow-glow-cyan ring-1 ring-cyan-400/50'
+                    : 'border-slate-800 bg-[#080d18] hover:border-slate-600'
                 }`}
               >
-                <div className="aspect-[4/3] w-full bg-[#F4F0E8] overflow-hidden p-2 flex items-center justify-center relative">
+                <div className="aspect-[4/3] w-full rounded-lg bg-[#F4F1EA] overflow-hidden relative flex items-center justify-center p-1">
                   <img
-                    src={bag.imageUrl}
-                    alt={bag.nameFr}
-                    loading="lazy"
-                    className="w-full h-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
+                    src={item.imageUrl}
+                    alt={item.shortFr}
+                    className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                    loading="eager"
                   />
                   {isSelected && (
-                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-maison-brass" />
+                    <span className={`absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center ${
+                      isGravure ? 'bg-indigo-500 text-white' : 'bg-cyan-400 text-slate-950'
+                    }`}>
+                      <Check className="w-2.5 h-2.5 stroke-[3]" />
+                    </span>
                   )}
                 </div>
-                <div className="p-2.5">
-                  <div className="text-xs font-semibold text-maison-ink leading-snug">
-                    {bag.shortFr}
+                <div className="mt-1.5 px-0.5">
+                  <div className={`text-[11px] font-semibold truncate ${
+                    isSelected ? (isGravure ? 'text-indigo-200' : 'text-cyan-200') : 'text-slate-200'
+                  }`}>
+                    {item.shortFr}
                   </div>
-                  <div className="text-[10px] text-maison-muted mt-0.5 truncate">
-                    {bag.key === 'roll_film' ? 'Bobine continue' : bag.hasBottomGusset ? 'Fond soufflet' : bag.hasSideGusset ? 'Soufflets latéraux' : 'Format plat'}
-                  </div>
+                  <div className="text-[9px] text-slate-400 truncate">{item.nameZh}</div>
                 </div>
               </button>
             );
           })}
 
-          {/* 8ème Carte Visuelle : Mode Monocouche PE/BOPP */}
+          {/* 8ème carte : Sachet Monocouche Recyclable PE/OPP */}
           <button
             type="button"
-            onClick={() => {
-              onToggleSingleLayer(true);
-              if (bagType === 'flat_bottom') {
-                onSelectBagType('stand_up');
-              }
-            }}
-            className={`group shrink-0 w-[132px] md:w-auto snap-start text-left rounded-xl border transition-all overflow-hidden ${
+            onClick={() => onToggleSingleLayer(true)}
+            className={`snap-start shrink-0 w-[108px] md:w-auto group text-left rounded-xl p-1.5 border transition-all cursor-pointer ${
               isSingleLayer
-                ? 'border-maison-brass ring-1 ring-maison-brass bg-maison-brassLight/40 shadow-sm'
-                : 'border-maison-border bg-white hover:border-maison-borderStrong hover:shadow-sm'
+                ? 'border-amber-400 bg-amber-500/15 ring-1 ring-amber-400/50'
+                : 'border-slate-800 bg-[#080d18] hover:border-slate-600'
             }`}
           >
-            <div className="aspect-[4/3] w-full bg-[#F4F0E8] overflow-hidden p-2 flex items-center justify-center relative">
+            <div className="aspect-[4/3] w-full rounded-lg bg-[#F4F1EA] overflow-hidden relative flex items-center justify-center p-1">
               <img
                 src={SINGLE_LAYER_IMAGE_URL}
-                alt="Sac Monocouche PE/BOPP"
-                loading="lazy"
-                className="w-full h-full object-contain mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
+                alt="Sachet Monocouche"
+                className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                loading="eager"
               />
               {isSingleLayer && (
-                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-maison-brass" />
+                <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center">
+                  <Check className="w-2.5 h-2.5 stroke-[3]" />
+                </span>
               )}
             </div>
-            <div className="p-2.5">
-              <div className="text-xs font-semibold text-maison-ink leading-snug">
+            <div className="mt-1.5 px-0.5">
+              <div className={`text-[11px] font-semibold truncate ${isSingleLayer ? 'text-amber-200' : 'text-slate-200'}`}>
                 Monocouche
               </div>
-              <div className="text-[10px] text-maison-muted mt-0.5 truncate">
-                PE / BOPP Recyclable
-              </div>
+              <div className="text-[9px] text-amber-400 truncate">0 passe colle</div>
             </div>
           </button>
         </div>

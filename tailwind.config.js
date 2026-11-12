@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -12,25 +13,20 @@ export default {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       colors: {
-        maison: {
-          canvas: '#F6F4EF',
-          stone: '#EDE9DF',
-          card: '#FFFFFF',
-          border: '#E4DFD3',
-          borderStrong: '#CFC7B6',
-          ink: '#171614',
-          slate: '#5A564E',
-          muted: '#8C8579',
-          brass: '#9E7840',
-          brassLight: '#F7F1E5',
-          emerald: '#1B5E42',
-          emeraldLight: '#EBF5F0',
+        cockpit: {
+          bg: '#060913',
+          card: '#0c1322',
+          well: '#080d18',
+          border: '#1e293b',
+          studio: '#F4F1EA',
         }
       },
       boxShadow: {
-        'atelier': '0 1px 3px rgba(23, 22, 20, 0.04), 0 8px 24px -6px rgba(23, 22, 20, 0.05)',
-        'atelier-hover': '0 4px 12px rgba(23, 22, 20, 0.06), 0 16px 32px -8px rgba(23, 22, 20, 0.08)',
-        'sticky-bar': '0 -4px 20px rgba(23, 22, 20, 0.08)',
+        'cockpit': '0 4px 24px -4px rgba(0, 0, 0, 0.45)',
+        'glow-cyan': '0 0 18px rgba(6, 182, 212, 0.22)',
+        'glow-indigo': '0 0 18px rgba(99, 102, 241, 0.22)',
+        'glow-emerald': '0 0 18px rgba(16, 185, 129, 0.20)',
+        'sticky-bar': '0 -6px 24px rgba(0, 0, 0, 0.65)',
       }
     },
   },

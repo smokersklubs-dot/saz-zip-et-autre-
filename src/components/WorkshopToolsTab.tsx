@@ -101,171 +101,174 @@ export const WorkshopToolsTab: React.FC<WorkshopToolsTabProps> = ({
     laminationPasses: uwPasses
   });
 
+  const inputClass =
+    'w-full px-3 py-2 rounded-lg border border-slate-700/80 bg-[#080d18] text-slate-100 font-mono text-xs sm:text-sm focus:outline-none focus:border-cyan-400';
+
   return (
-    <div className="space-y-6">
-      <div className="bg-white border border-maison-border rounded-2xl p-6 shadow-atelier">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-maison-brass font-semibold">
-          Suite Technique Convertisseur
+    <div className="space-y-5">
+      <div className="bg-[#0c1322] border border-slate-800/80 rounded-2xl p-5 sm:p-6 shadow-cockpit">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-cyan-400 font-bold">
+          Suite Technique Convertisseur (`suanfa` · `tools`)
         </p>
-        <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-maison-ink mt-1">
+        <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-white mt-1">
           7 Outils de Calcul Atelier & Laize Film
         </h2>
-        <p className="text-sm text-maison-slate mt-1">
+        <p className="text-xs sm:text-sm text-slate-400 mt-1">
           Conversions directes issues des abaques de production pour bobines, masses volumiques, diamètres de mandrin, MOQ et métrage matière.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Outil 1 : Poids Bobine -> Métrage */}
-        <div className="bg-white border border-maison-border rounded-2xl p-5 shadow-atelier flex flex-col justify-between">
+        <div className="bg-[#0c1322] border border-cyan-500/25 rounded-2xl p-5 shadow-cockpit flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-maison-brass mb-3">
+            <div className="flex items-center gap-2 text-cyan-400 mb-3">
               <Scale className="w-4 h-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">1 · Poids Bobine → Longueur</span>
+              <span className="text-xs font-bold uppercase tracking-wider">1 · Poids Bobine → Longueur</span>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Poids net (kg)</span>
+                <span className="text-slate-400 font-medium">Poids net (kg)</span>
                 <input
                   type="number"
                   value={rollWeightKg}
                   onChange={e => setRollWeightKg(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Laize bobine (cm)</span>
+                <span className="text-slate-400 font-medium">Laize bobine (cm)</span>
                 <input
                   type="number"
                   value={rollWidthCm}
                   onChange={e => setRollWidthCm(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Épaisseur (1丝 = 10µm)</span>
+                <span className="text-slate-400 font-medium">Épaisseur (1丝=10µm)</span>
                 <input
                   type="number"
                   step="0.1"
                   value={rollLayerThicknessSilk}
                   onChange={e => setRollLayerThicknessSilk(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Densité moy. (g/cm³)</span>
+                <span className="text-slate-400 font-medium">Densité moy. (g/cm³)</span>
                 <input
                   type="number"
                   step="0.01"
                   value={rollLayerDensity}
                   onChange={e => setRollLayerDensity(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
             </div>
           </div>
-          <div className="mt-5 pt-4 border-t border-maison-border flex items-baseline justify-between">
+          <div className="mt-5 pt-4 border-t border-slate-800 flex items-baseline justify-between">
             <div>
-              <span className="text-[11px] text-maison-muted block">Longueur estimée</span>
-              <span className="font-mono text-2xl font-semibold text-maison-ink tabular-nums">
+              <span className="text-[11px] text-slate-400 block">Longueur estimée</span>
+              <span className="font-mono text-2xl font-bold text-cyan-300 tabular-nums">
                 {resWeightToLen.lengthMeters.toLocaleString('fr-FR')} m
               </span>
             </div>
-            <span className="text-xs font-mono text-maison-slate">{resWeightToLen.basisGsm} g/m²</span>
+            <span className="text-xs font-mono text-amber-300">{resWeightToLen.basisGsm} g/m²</span>
           </div>
         </div>
 
         {/* Outil 2 : Longueur -> Diamètre Bobine */}
-        <div className="bg-white border border-maison-border rounded-2xl p-5 shadow-atelier flex flex-col justify-between">
+        <div className="bg-[#0c1322] border border-indigo-500/25 rounded-2xl p-5 shadow-cockpit flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-maison-brass mb-3">
+            <div className="flex items-center gap-2 text-indigo-400 mb-3">
               <CircleDot className="w-4 h-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">2 · Longueur → Diamètre</span>
+              <span className="text-xs font-bold uppercase tracking-wider">2 · Longueur → Diamètre</span>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <label className="space-y-1 col-span-2">
-                <span className="text-maison-slate font-medium">Métrage bobiné (m)</span>
+                <span className="text-slate-400 font-medium">Métrage bobiné (m)</span>
                 <input
                   type="number"
                   value={lenToDiaMeters}
                   onChange={e => setLenToDiaMeters(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Diam. mandrin (mm)</span>
+                <span className="text-slate-400 font-medium">Diam. mandrin (mm)</span>
                 <input
                   type="number"
                   value={coreDiaMm}
                   onChange={e => setCoreDiaMm(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Épaisseur (丝)</span>
+                <span className="text-slate-400 font-medium">Épaisseur (丝)</span>
                 <input
                   type="number"
                   step="0.1"
                   value={lenToDiaThickness}
                   onChange={e => setLenToDiaThickness(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
             </div>
           </div>
-          <div className="mt-5 pt-4 border-t border-maison-border flex items-baseline justify-between">
+          <div className="mt-5 pt-4 border-t border-slate-800 flex items-baseline justify-between">
             <div>
-              <span className="text-[11px] text-maison-muted block">Diamètre extérieur total</span>
-              <span className="font-mono text-2xl font-semibold text-maison-ink tabular-nums">
+              <span className="text-[11px] text-slate-400 block">Diamètre extérieur total</span>
+              <span className="font-mono text-2xl font-bold text-indigo-300 tabular-nums">
                 {resLenToDia.outerDiameterMm} mm
               </span>
             </div>
-            <span className="text-xs font-mono text-maison-slate">Paroi {resLenToDia.wallThicknessMm} mm</span>
+            <span className="text-xs font-mono text-slate-300">Paroi {resLenToDia.wallThicknessMm} mm</span>
           </div>
         </div>
 
         {/* Outil 3 : Diamètre -> Longueur Bobine */}
-        <div className="bg-white border border-maison-border rounded-2xl p-5 shadow-atelier flex flex-col justify-between">
+        <div className="bg-[#0c1322] border border-purple-500/25 rounded-2xl p-5 shadow-cockpit flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-maison-brass mb-3">
+            <div className="flex items-center gap-2 text-purple-400 mb-3">
               <Ruler className="w-4 h-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">3 · Diamètre → Longueur</span>
+              <span className="text-xs font-bold uppercase tracking-wider">3 · Diamètre → Longueur</span>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <label className="space-y-1 col-span-2">
-                <span className="text-maison-slate font-medium">Diamètre extérieur mesuré (mm)</span>
+                <span className="text-slate-400 font-medium">Diamètre extérieur mesuré (mm)</span>
                 <input
                   type="number"
                   value={outerDiaMm}
                   onChange={e => setOuterDiaMm(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Diam. mandrin (mm)</span>
+                <span className="text-slate-400 font-medium">Diam. mandrin (mm)</span>
                 <input
                   type="number"
                   value={diaToLenCoreMm}
                   onChange={e => setDiaToLenCoreMm(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Épaisseur (丝)</span>
+                <span className="text-slate-400 font-medium">Épaisseur (丝)</span>
                 <input
                   type="number"
                   step="0.1"
                   value={diaToLenThickness}
                   onChange={e => setDiaToLenThickness(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
             </div>
           </div>
-          <div className="mt-5 pt-4 border-t border-maison-border flex items-baseline justify-between">
+          <div className="mt-5 pt-4 border-t border-slate-800 flex items-baseline justify-between">
             <div>
-              <span className="text-[11px] text-maison-muted block">Métrage restant en bobine</span>
-              <span className="font-mono text-2xl font-semibold text-maison-ink tabular-nums">
+              <span className="text-[11px] text-slate-400 block">Métrage restant en bobine</span>
+              <span className="font-mono text-2xl font-bold text-purple-300 tabular-nums">
                 {resDiaToLen.lengthMeters.toLocaleString('fr-FR')} m
               </span>
             </div>
@@ -273,94 +276,94 @@ export const WorkshopToolsTab: React.FC<WorkshopToolsTabProps> = ({
         </div>
 
         {/* Outil 4 : Prix m² -> Prix kg */}
-        <div className="bg-white border border-maison-border rounded-2xl p-5 shadow-atelier flex flex-col justify-between">
+        <div className="bg-[#0c1322] border border-emerald-500/25 rounded-2xl p-5 shadow-cockpit flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-maison-brass mb-3">
+            <div className="flex items-center gap-2 text-emerald-400 mb-3">
               <Calculator className="w-4 h-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">4 · Prix au m² → Prix au kg</span>
+              <span className="text-xs font-bold uppercase tracking-wider">4 · Prix au m² → Prix au kg</span>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <label className="space-y-1 col-span-2">
-                <span className="text-maison-slate font-medium">Tarif surface (¥ / m²)</span>
+                <span className="text-slate-400 font-medium">Tarif surface (¥ / m²)</span>
                 <input
                   type="number"
                   step="0.05"
                   value={sqmPriceCny}
                   onChange={e => setSqmPriceCny(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Densité (g/cm³)</span>
+                <span className="text-slate-400 font-medium">Densité (g/cm³)</span>
                 <input
                   type="number"
                   step="0.01"
                   value={priceConvDensity}
                   onChange={e => setPriceConvDensity(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Épaisseur (丝)</span>
+                <span className="text-slate-400 font-medium">Épaisseur (丝)</span>
                 <input
                   type="number"
                   step="0.1"
                   value={priceConvThickness}
                   onChange={e => setPriceConvThickness(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
             </div>
           </div>
-          <div className="mt-5 pt-4 border-t border-maison-border flex items-baseline justify-between">
+          <div className="mt-5 pt-4 border-t border-slate-800 flex items-baseline justify-between">
             <div>
-              <span className="text-[11px] text-maison-muted block">Équivalent poids</span>
-              <span className="font-mono text-2xl font-semibold text-maison-ink tabular-nums">
+              <span className="text-[11px] text-slate-400 block">Équivalent poids</span>
+              <span className="font-mono text-2xl font-bold text-emerald-300 tabular-nums">
                 {resSqmToKg.pricePerKgCny} ¥/kg
               </span>
             </div>
-            <span className="text-xs font-mono text-maison-emerald font-semibold">
+            <span className="text-xs font-mono text-emerald-400 font-semibold">
               {resSqmToKg.pricePerKgEur} €/kg · {resSqmToKg.gsm} gsm
             </span>
           </div>
         </div>
 
         {/* Outil 5 : Grammage -> Densité */}
-        <div className="bg-white border border-maison-border rounded-2xl p-5 shadow-atelier flex flex-col justify-between">
+        <div className="bg-[#0c1322] border border-amber-500/25 rounded-2xl p-5 shadow-cockpit flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-maison-brass mb-3">
+            <div className="flex items-center gap-2 text-amber-400 mb-3">
               <Layers className="w-4 h-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">5 · Grammage → Densité</span>
+              <span className="text-xs font-bold uppercase tracking-wider">5 · Grammage → Densité</span>
             </div>
             <div className="grid grid-cols-2 gap-3 text-xs">
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Grammage (g/m²)</span>
+                <span className="text-slate-400 font-medium">Grammage (g/m²)</span>
                 <input
                   type="number"
                   value={gsmValue}
                   onChange={e => setGsmValue(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Épaisseur (丝)</span>
+                <span className="text-slate-400 font-medium">Épaisseur (丝)</span>
                 <input
                   type="number"
                   step="0.1"
                   value={gsmThicknessSilk}
                   onChange={e => setGsmThicknessSilk(Number(e.target.value) || 0)}
-                  className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono text-sm"
+                  className={inputClass}
                 />
               </label>
             </div>
-            <p className="text-[11px] text-maison-muted mt-3 leading-relaxed">
-              Permet de calibrer les papiers Kraft (50g → 8,5丝) ou films spéciaux non standards dans l'éditeur multicouche.
+            <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
+              Calibre les papiers Kraft (50g → 8,5丝) ou films spéciaux non standards dans l&apos;éditeur 5 couches.
             </p>
           </div>
-          <div className="mt-5 pt-4 border-t border-maison-border flex items-baseline justify-between">
+          <div className="mt-5 pt-4 border-t border-slate-800 flex items-baseline justify-between">
             <div>
-              <span className="text-[11px] text-maison-muted block">Densité résultante</span>
-              <span className="font-mono text-2xl font-semibold text-maison-ink tabular-nums">
+              <span className="text-[11px] text-slate-400 block">Densité résultante</span>
+              <span className="font-mono text-2xl font-bold text-amber-300 tabular-nums">
                 {resGsmToDensity.density} g/cm³
               </span>
             </div>
@@ -368,19 +371,19 @@ export const WorkshopToolsTab: React.FC<WorkshopToolsTabProps> = ({
         </div>
 
         {/* Outil 6 : Calculateur MOQ Héliogravure */}
-        <div className="bg-white border border-maison-border rounded-2xl p-5 shadow-atelier flex flex-col justify-between">
+        <div className="bg-[#0c1322] border border-rose-500/25 rounded-2xl p-5 shadow-cockpit flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-maison-brass mb-3">
+            <div className="flex items-center gap-2 text-rose-400 mb-3">
               <Calculator className="w-4 h-4" />
-              <span className="text-xs font-semibold uppercase tracking-wider">6 · Minimum Usine (MOQ)</span>
+              <span className="text-xs font-bold uppercase tracking-wider">6 · Minimum Usine (MOQ)</span>
             </div>
             <div className="grid grid-cols-2 gap-2.5 text-xs">
               <label className="space-y-1 col-span-2">
-                <span className="text-maison-slate font-medium">Forme du sac</span>
+                <span className="text-slate-400 font-medium">Forme du sac</span>
                 <select
                   value={moqBagType}
                   onChange={e => setMoqBagType(e.target.value as BagTypeKey)}
-                  className="w-full px-3 py-1.5 rounded-lg border border-maison-border bg-maison-canvas/50 text-xs font-medium"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 text-xs font-medium"
                 >
                   {BAG_TYPES_CATALOG.map(b => (
                     <option key={b.key} value={b.key}>{b.nameFr}</option>
@@ -388,47 +391,47 @@ export const WorkshopToolsTab: React.FC<WorkshopToolsTabProps> = ({
                 </select>
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Passe min (m)</span>
+                <span className="text-slate-400 font-medium">Passe min (m)</span>
                 <input
                   type="number"
                   step="500"
                   value={moqRunMeters}
                   onChange={e => setMoqRunMeters(Number(e.target.value) || 0)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono"
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-mono"
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Laize min (cm)</span>
+                <span className="text-slate-400 font-medium">Laize min (cm)</span>
                 <input
                   type="number"
                   value={moqMinWidth}
                   onChange={e => setMoqMinWidth(Number(e.target.value) || 0)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono"
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-mono"
                 />
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">L × H + F (cm)</span>
+                <span className="text-slate-400 font-medium">L × H + F (cm)</span>
                 <div className="flex gap-1">
-                  <input type="number" value={moqW} onChange={e => setMoqW(Number(e.target.value) || 1)} className="w-1/3 px-1.5 py-1.5 rounded border border-maison-border font-mono text-center" />
-                  <input type="number" value={moqH} onChange={e => setMoqH(Number(e.target.value) || 1)} className="w-1/3 px-1.5 py-1.5 rounded border border-maison-border font-mono text-center" />
-                  <input type="number" value={moqG} onChange={e => setMoqG(Number(e.target.value) || 0)} className="w-1/3 px-1.5 py-1.5 rounded border border-maison-border font-mono text-center" />
+                  <input type="number" value={moqW} onChange={e => setMoqW(Number(e.target.value) || 1)} className="w-1/3 px-1.5 py-1.5 rounded border border-slate-700 bg-[#080d18] text-slate-100 font-mono text-center" />
+                  <input type="number" value={moqH} onChange={e => setMoqH(Number(e.target.value) || 1)} className="w-1/3 px-1.5 py-1.5 rounded border border-slate-700 bg-[#080d18] text-slate-100 font-mono text-center" />
+                  <input type="number" value={moqG} onChange={e => setMoqG(Number(e.target.value) || 0)} className="w-1/3 px-1.5 py-1.5 rounded border border-slate-700 bg-[#080d18] text-slate-100 font-mono text-center" />
                 </div>
               </label>
               <label className="space-y-1">
-                <span className="text-maison-slate font-medium">Perte (%)</span>
+                <span className="text-slate-400 font-medium">Perte (%)</span>
                 <input
                   type="number"
                   value={moqWaste}
                   onChange={e => setMoqWaste(Number(e.target.value) || 0)}
-                  className="w-full px-2.5 py-1.5 rounded-lg border border-maison-border bg-maison-canvas/50 font-mono"
+                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-mono"
                 />
               </label>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-maison-border flex items-center justify-between gap-2">
+          <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
             <div>
-              <span className="text-[11px] text-maison-muted block">MOQ ({resMoq.webPoses} poses/laize)</span>
-              <span className="font-mono text-xl font-semibold text-maison-ink tabular-nums">
+              <span className="text-[11px] text-slate-400 block">MOQ ({resMoq.webPoses} poses/laize)</span>
+              <span className="font-mono text-xl font-bold text-rose-300 tabular-nums">
                 {resMoq.moqPieces.toLocaleString('fr-FR')} pcs
               </span>
             </div>
@@ -436,7 +439,7 @@ export const WorkshopToolsTab: React.FC<WorkshopToolsTabProps> = ({
               <button
                 type="button"
                 onClick={() => onApplyQuantityToQuote(resMoq.moqPieces)}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#171614] text-white text-[11px] font-semibold hover:bg-maison-brass transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-[11px] font-bold hover:bg-cyan-400 transition-colors cursor-pointer"
               >
                 Utiliser <ArrowRight className="w-3 h-3" />
               </button>
@@ -446,28 +449,28 @@ export const WorkshopToolsTab: React.FC<WorkshopToolsTabProps> = ({
       </div>
 
       {/* Outil 7 Pleine Largeur : Débit Matière & Consommation par Poste */}
-      <div className="bg-white border border-maison-border rounded-2xl p-6 shadow-atelier">
+      <div className="bg-[#0c1322] border border-slate-800/80 rounded-2xl p-5 sm:p-6 shadow-cockpit">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-maison-brass">
+            <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
               7 · Calculateur Débit Matière & Gâche Atelier (下料计算)
             </span>
-            <h3 className="text-lg font-semibold text-maison-ink mt-0.5">
+            <h3 className="text-base sm:text-lg font-semibold text-white mt-0.5">
               Planification des métrages nets et pertes de calage (Impression · Contrecollage · Façonnage)
             </h3>
           </div>
-          <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-maison-canvas border border-maison-border text-maison-slate">
+          <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 self-start sm:self-auto">
             {resUnwind.webPoses} poses · Laize bobine {resUnwind.totalWebWidthCm} cm
           </span>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-5 text-xs">
           <label className="space-y-1 col-span-2 sm:col-span-2">
-            <span className="text-maison-slate font-medium">Type de sac</span>
+            <span className="text-slate-400 font-medium">Type de sac</span>
             <select
               value={uwBagType}
               onChange={e => setUwBagType(e.target.value as BagTypeKey)}
-              className="w-full px-3 py-2 rounded-lg border border-maison-border bg-maison-canvas/50 font-medium"
+              className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-medium"
             >
               {BAG_TYPES_CATALOG.map(b => (
                 <option key={b.key} value={b.key}>{b.nameFr}</option>
@@ -475,62 +478,62 @@ export const WorkshopToolsTab: React.FC<WorkshopToolsTabProps> = ({
             </select>
           </label>
           <label className="space-y-1">
-            <span className="text-maison-slate font-medium">Quantité (pcs)</span>
-            <input type="number" step="500" value={uwQty} onChange={e => setUwQty(Number(e.target.value) || 0)} className="w-full px-3 py-2 rounded-lg border border-maison-border font-mono" />
+            <span className="text-slate-400 font-medium">Quantité (pcs)</span>
+            <input type="number" step="500" value={uwQty} onChange={e => setUwQty(Number(e.target.value) || 0)} className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-mono" />
           </label>
           <label className="space-y-1">
-            <span className="text-maison-slate font-medium">Laize machine (cm)</span>
-            <input type="number" value={uwMinWeb} onChange={e => setUwMinWeb(Number(e.target.value) || 50)} className="w-full px-3 py-2 rounded-lg border border-maison-border font-mono" />
+            <span className="text-slate-400 font-medium">Laize machine (cm)</span>
+            <input type="number" value={uwMinWeb} onChange={e => setUwMinWeb(Number(e.target.value) || 50)} className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-mono" />
           </label>
           <label className="space-y-1">
-            <span className="text-maison-slate font-medium">L × H × Fond (cm)</span>
+            <span className="text-slate-400 font-medium">L × H × Fond (cm)</span>
             <div className="flex gap-1">
-              <input type="number" value={uwW} onChange={e => setUwW(Number(e.target.value) || 1)} className="w-1/3 px-1.5 py-2 rounded-lg border border-maison-border font-mono text-center" />
-              <input type="number" value={uwH} onChange={e => setUwH(Number(e.target.value) || 1)} className="w-1/3 px-1.5 py-2 rounded-lg border border-maison-border font-mono text-center" />
-              <input type="number" value={uwG} onChange={e => setUwG(Number(e.target.value) || 0)} className="w-1/3 px-1.5 py-2 rounded-lg border border-maison-border font-mono text-center" />
+              <input type="number" value={uwW} onChange={e => setUwW(Number(e.target.value) || 1)} className="w-1/3 px-1.5 py-2 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-mono text-center" />
+              <input type="number" value={uwH} onChange={e => setUwH(Number(e.target.value) || 1)} className="w-1/3 px-1.5 py-2 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-mono text-center" />
+              <input type="number" value={uwG} onChange={e => setUwG(Number(e.target.value) || 0)} className="w-1/3 px-1.5 py-2 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-mono text-center" />
             </div>
           </label>
           <label className="space-y-1">
-            <span className="text-maison-slate font-medium">Passes contrecollage</span>
-            <input type="number" min={0} max={4} value={uwPasses} onChange={e => setUwPasses(Number(e.target.value) || 0)} className="w-full px-3 py-2 rounded-lg border border-maison-border font-mono" />
+            <span className="text-slate-400 font-medium">Passes contrecollage</span>
+            <input type="number" min={0} max={4} value={uwPasses} onChange={e => setUwPasses(Number(e.target.value) || 0)} className="w-full px-3 py-2 rounded-lg border border-slate-700 bg-[#080d18] text-slate-100 font-mono" />
           </label>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="p-3.5 rounded-xl bg-maison-canvas/60 border border-maison-border">
-            <div className="text-[11px] text-maison-muted">Métrage Net Utile</div>
-            <div className="font-mono text-lg font-semibold text-maison-ink mt-1 tabular-nums">
+          <div className="p-3.5 rounded-xl bg-[#080d18] border border-slate-800">
+            <div className="text-[11px] text-slate-400">Métrage Net Utile</div>
+            <div className="font-mono text-lg font-bold text-cyan-300 mt-1 tabular-nums">
               {resUnwind.initialMeters.toLocaleString('fr-FR')} m
             </div>
           </div>
-          <div className="p-3.5 rounded-xl bg-maison-canvas/60 border border-maison-border">
-            <div className="text-[11px] text-maison-muted">Gâche Impression</div>
-            <div className="font-mono text-lg font-semibold text-maison-ink mt-1 tabular-nums">
+          <div className="p-3.5 rounded-xl bg-[#080d18] border border-slate-800">
+            <div className="text-[11px] text-slate-400">Gâche Impression</div>
+            <div className="font-mono text-lg font-bold text-blue-300 mt-1 tabular-nums">
               +{resUnwind.printWasteMeters.toLocaleString('fr-FR')} m
             </div>
           </div>
-          <div className="p-3.5 rounded-xl bg-maison-canvas/60 border border-maison-border">
-            <div className="text-[11px] text-maison-muted">Gâche Contrecollage</div>
-            <div className="font-mono text-lg font-semibold text-maison-ink mt-1 tabular-nums">
+          <div className="p-3.5 rounded-xl bg-[#080d18] border border-slate-800">
+            <div className="text-[11px] text-slate-400">Gâche Contrecollage</div>
+            <div className="font-mono text-lg font-bold text-purple-300 mt-1 tabular-nums">
               +{resUnwind.laminationWasteMeters.toLocaleString('fr-FR')} m
             </div>
           </div>
-          <div className="p-3.5 rounded-xl bg-maison-canvas/60 border border-maison-border">
-            <div className="text-[11px] text-maison-muted">Gâche Façonnage</div>
-            <div className="font-mono text-lg font-semibold text-maison-ink mt-1 tabular-nums">
+          <div className="p-3.5 rounded-xl bg-[#080d18] border border-slate-800">
+            <div className="text-[11px] text-slate-400">Gâche Façonnage</div>
+            <div className="font-mono text-lg font-bold text-pink-300 mt-1 tabular-nums">
               +{resUnwind.bagMakingWasteMeters.toLocaleString('fr-FR')} m
             </div>
           </div>
-          <div className="p-3.5 rounded-xl bg-[#171614] text-white col-span-2 sm:col-span-1">
-            <div className="text-[11px] text-white/70">Total Film à Lancer</div>
-            <div className="font-mono text-lg font-semibold text-maison-brassLight mt-1 tabular-nums">
+          <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 col-span-2 sm:col-span-1">
+            <div className="text-[11px] text-emerald-300 font-semibold">Total Film à Lancer</div>
+            <div className="font-mono text-lg font-bold text-emerald-200 mt-1 tabular-nums">
               {resUnwind.totalMetersOrder.toLocaleString('fr-FR')} m
             </div>
           </div>
         </div>
       </div>
 
-      <p className="text-[11px] text-maison-muted text-right font-mono">
+      <p className="text-[11px] text-slate-500 text-right font-mono">
         Taux de change de référence atelier : 1 € = {(1 / CNY_TO_EUR_RATE).toFixed(2)} CNY
       </p>
     </div>

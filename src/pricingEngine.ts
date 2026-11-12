@@ -99,7 +99,9 @@ export const BAG_TYPES_CATALOG: BagTypeDefinition[] = [
     zipperOptions: [
       { label: 'Zip standard (普通拉链)', labelFr: 'Zip pression standard', labelZh: '普通拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMX822', hasZip: true },
       { label: 'Sans zip (无拉链)', labelFr: 'Soudé ouvert (sans zip)', labelZh: '无拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMW822', hasZip: false },
-      { label: 'Zip sécurité enfant (童锁拉链 Child-Lock)', labelFr: 'Zip sécurité enfant certifié', labelZh: '童锁拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMY822', hasZip: true }
+      { label: 'Zip Easy-Peel / Poche (易撕拉链)', labelFr: 'Zip Easy-Peel d\'ouverture facile', labelZh: '易撕拉链', instId: 'GRAVURE-STANDUP-EASYPEEL', hasZip: true },
+      { label: 'Zip sécurité enfant (童锁拉链 Child-Lock)', labelFr: 'Zip sécurité enfant certifié', labelZh: '童锁拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMY822', hasZip: true },
+      { label: 'Zip curseur Slider (滑块拉链)', labelFr: 'Zip curseur coulissant (Slider)', labelZh: '滑块拉链', instId: 'GRAVURE-STANDUP-SLIDER', hasZip: true }
     ]
   },
   {
@@ -115,6 +117,7 @@ export const BAG_TYPES_CATALOG: BagTypeDefinition[] = [
     zipperOptions: [
       { label: 'Sans zip (无拉链)', labelFr: 'Scellé 3 côtés sans zip', labelZh: '无拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMT822', hasZip: false },
       { label: 'Zip standard (普通拉链)', labelFr: 'Zip pression standard', labelZh: '普通拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMU822', hasZip: true },
+      { label: 'Zip Easy-Peel (易撕拉链)', labelFr: 'Zip Easy-Peel déchirable', labelZh: '易撕拉链', instId: 'GRAVURE-3SIDE-EASYPEEL', hasZip: true },
       { label: 'Zip sécurité enfant (童锁拉链 Child-Lock)', labelFr: 'Zip sécurité enfant certifié', labelZh: '童锁拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMV822', hasZip: true }
     ]
   },
@@ -159,7 +162,7 @@ export const BAG_TYPES_CATALOG: BagTypeDefinition[] = [
     hasSideGusset: true,
     defaultBottomMode: 1,
     zipperOptions: [
-      { label: 'Sans zip standard (无拉链)', labelFr: 'Ouverture haute standard', labelZh: '无拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMM3922', hasZip: false }
+      { label: 'Sans zip standard (背封折边)', labelFr: 'Accordéon soudure dos standard', labelZh: '背封折边', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMM3922', hasZip: false }
     ]
   },
   {
@@ -175,7 +178,8 @@ export const BAG_TYPES_CATALOG: BagTypeDefinition[] = [
     zipperOptions: [
       { label: 'Sans zip classique (四边封无拉链)', labelFr: 'Quad Seal sans zip', labelZh: '无拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMM5922', hasZip: false },
       { label: 'Zip standard (四边封带拉链)', labelFr: 'Quad Seal avec zip frontal', labelZh: '普通拉链', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMM6922', hasZip: true },
-      { label: 'Machine Zip sans rail (四边封机-无拉链)', labelFr: 'Machine Quad avec soudure renforcée', labelZh: '无拉链(带拉链机)', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMM4922', hasZip: false }
+      { label: 'Machine Zip sans rail (四边封机-无拉链)', labelFr: 'Machine Quad avec soudure renforcée', labelZh: '无拉链(带拉链机)', instId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMM4922', hasZip: false },
+      { label: 'Zip curseur Slider Hélio (滑块拉链)', labelFr: 'Quad Seal Slider curseur (Hélio)', labelZh: '滑块拉链', instId: 'GRAVURE-4SIDE-SLIDER', hasZip: true }
     ]
   },
   {
@@ -215,6 +219,38 @@ export type SpoutSizeKey =
   | 'spout_26mm'
   | 'spout_33mm';
 
+export type InkCoverageLevel = 'lt20' | '20_50' | '50_100' | 'single_full' | 'double_full';
+export type PantoneColorKey = 'gold' | 'silver' | 'purple' | 'magenta';
+export type HandleVariantKey = 'standard' | 'rice_large' | 'rice_small';
+export type AdhesiveVariantKey = 'none' | 'standard' | 'destructive';
+
+export const INK_COVERAGE_CATALOG: { key: InkCoverageLevel; labelFr: string; labelZh: string; inkGsmAdd: number; rateMultiplier: number }[] = [
+  { key: 'lt20', labelFr: '< 20% surface (Économique)', labelZh: '20%以内', inkGsmAdd: 0, rateMultiplier: 0.92 },
+  { key: '20_50', labelFr: '20% – 50% surface (Standard)', labelZh: '20%-50%', inkGsmAdd: 0, rateMultiplier: 1.0 },
+  { key: '50_100', labelFr: '50% – 100% surface (Dense)', labelZh: '50%-100%', inkGsmAdd: 0, rateMultiplier: 1.08 },
+  { key: 'single_full', labelFr: 'Plein encrage simple (单满版)', labelZh: '单满版', inkGsmAdd: 0.5, rateMultiplier: 1.20 },
+  { key: 'double_full', labelFr: 'Double plein encrage (双满版)', labelZh: '双满版', inkGsmAdd: 1.5, rateMultiplier: 1.38 }
+];
+
+export const PANTONE_COLORS_CATALOG: { key: PantoneColorKey; labelFr: string; labelZh: string; hex: string; sqmSurchargeCny: number }[] = [
+  { key: 'gold', labelFr: 'Pantone Or Métal (金色)', labelZh: '金色', hex: '#D4AF37', sqmSurchargeCny: 0.12 },
+  { key: 'silver', labelFr: 'Pantone Argent (银色)', labelZh: '银色', hex: '#C0C5CE', sqmSurchargeCny: 0.10 },
+  { key: 'purple', labelFr: 'Pantone Violet Spécial (紫色)', labelZh: '紫色', hex: '#8B5CF6', sqmSurchargeCny: 0.08 },
+  { key: 'magenta', labelFr: 'Pantone Rose / Magenta (桃红色)', labelZh: '桃红色', hex: '#EC4899', sqmSurchargeCny: 0.08 }
+];
+
+export const HANDLE_VARIANTS_CATALOG: Record<HandleVariantKey, { nameFr: string; nameZh: string; unitCost: number; minFee: number; weightG: number }> = {
+  standard: { nameFr: 'Poignée découpée 10 × 5,5 cm', nameZh: '10*5.5手提', unitCost: 0.105, minFee: 100, weightG: 7.6 },
+  rice_small: { nameFr: 'Poignée rigide petit format (7g)', nameZh: '大米袋小手提', unitCost: 0.180, minFee: 120, weightG: 7.0 },
+  rice_large: { nameFr: 'Poignée rigide grand format (8g)', nameZh: '大米袋大手提', unitCost: 0.240, minFee: 150, weightG: 8.0 }
+};
+
+export const ADHESIVE_VARIANTS_CATALOG: Record<AdhesiveVariantKey, { nameFr: string; nameZh: string; meterRateCny: number; unitCostCny: number; minFee: number }> = {
+  none: { nameFr: 'Aucune bande adhésive', nameZh: '无', meterRateCny: 0, unitCostCny: 0, minFee: 0 },
+  standard: { nameFr: 'Bande adhésive 18/10mm refermable', nameZh: '自粘大号18MM/10MM', meterRateCny: 0.05, unitCostCny: 0.012, minFee: 100 },
+  destructive: { nameFr: 'Colle blanche inviolable destructive 18/10mm', nameZh: '破环性白胶18MM/10MM', meterRateCny: 0.09, unitCostCny: 0.022, minFee: 140 }
+};
+
 export interface FinishesOptions {
   uvEnhancement?: 'none' | 'matte_varnish' | 'spot_uv' | 'thick_uv' | 'hot_stamping' | 'cold_foil' | 'uv_and_hot_stamping';
   hasMatteVarnish?: boolean;
@@ -222,30 +258,34 @@ export interface FinishesOptions {
   spoutSize?: SpoutSizeKey;
   hasDegassingValve?: boolean;
   hasHangingHole?: boolean;
+  handleVariant?: HandleVariantKey;
   hasWindow?: boolean;         // 开窗 (Fenêtre transparente découpée)
   windowCount?: 1 | 2;         // 1 ou 2 fenêtres kraft
   hasEmbossing?: boolean;      // 压纹 (Gaufrage / Embossage)
   hasAdhesiveStrip?: boolean;  // 自粘 (Bande adhésive)
-  fullInkCoverage?: boolean;   // 满版印刷 (Plein encrage)
+  adhesiveVariant?: AdhesiveVariantKey;
+  fullInkCoverage?: boolean;   // Rétrocompat plein encrage
+  inkCoverageLevel?: InkCoverageLevel;
+  pantoneColors?: PantoneColorKey[];
 }
 
 export const FINISHES_CATALOG = {
   uv: {
-    none: { name: 'Aucune finition spéciale', nameZh: '无', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMH8U1', unitCost: 0, minFee: 0, weightG: 0, imageUrl: '' },
-    matte_varnish: { name: 'Vernis mat intégral Soft-Touch', nameZh: '满版哑油', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMF8U1', unitCost: 0.40, minFee: 100, weightG: 0, imageUrl: '/images/finishes/matte.jpg' },
-    spot_uv: { name: 'Vernis sélectif brillant (Spot UV)', nameZh: 'UV', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMJ8U1', unitCost: 1.00, minFee: 400, weightG: 0, imageUrl: '/images/finishes/spot-uv.jpg' },
-    thick_uv: { name: 'Vernis 3D tactile relief (Épais UV)', nameZh: '厚UV', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMME8U1', unitCost: 1.70, minFee: 500, weightG: 0, imageUrl: '/images/finishes/spot-uv.jpg' },
-    hot_stamping: { name: 'Dorure à chaud métallisée', nameZh: '烫金', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMK8U1', unitCost: 1.60, minFee: 400, weightG: 0, imageUrl: '/images/finishes/hot-foil.jpg' },
+    none: { name: 'Aucune finition spéciale', nameZh: '无', instId: '', unitCost: 0, minFee: 0, weightG: 0, imageUrl: '' },
+    matte_varnish: { name: 'Vernis mat intégral Soft-Touch', nameZh: '满版哑油', instId: 'FINST-YLD66U81JB95U1P5I3P2Q5RVC8NF28BJN2HOMRG', unitCost: 0.40, minFee: 100, weightG: 0, imageUrl: '/images/finishes/matte.jpg' },
+    spot_uv: { name: 'Vernis sélectif brillant (Spot UV)', nameZh: 'UV', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMW8U1', unitCost: 1.00, minFee: 400, weightG: 0, imageUrl: '/images/finishes/spot-uv.jpg' },
+    thick_uv: { name: 'Vernis 3D tactile relief (Épais UV)', nameZh: '厚UV', instId: 'FINST-XE7668C19VP65KFKPETL3CQCX6KX3P9DOXIQMC51', unitCost: 1.70, minFee: 500, weightG: 0, imageUrl: '/images/finishes/spot-uv.jpg' },
+    hot_stamping: { name: 'Dorure à chaud métallisée', nameZh: '烫金', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMV8U1', unitCost: 1.60, minFee: 400, weightG: 0, imageUrl: '/images/finishes/hot-foil.jpg' },
     cold_foil: { name: 'Dorure à froid haute précision', nameZh: '烫金（冷烫）', instId: 'GRAVURE-COLD-FOIL', unitCost: 1.80, minFee: 500, weightG: 0, imageUrl: '/images/finishes/hot-foil.jpg' },
-    uv_and_hot_stamping: { name: 'Combiné Spot UV + Dorure à chaud', nameZh: 'UV+烫金', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMG8U1', unitCost: 1.80, minFee: 600, weightG: 0, imageUrl: '/images/finishes/hot-foil.jpg' }
+    uv_and_hot_stamping: { name: 'Combiné Spot UV + Dorure à chaud', nameZh: 'UV+烫金', instId: 'FINST-H9E66171BSG4MK34IMWNQ9U9LF7G2S8078ENMXL3', unitCost: 1.80, minFee: 600, weightG: 0, imageUrl: '/images/finishes/hot-foil.jpg' }
   },
   spouts: {
-    none: { name: 'Sans bec verseur', nameZh: '无', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMM09U1', unitCost: 0, minFee: 0, weightG: 0 },
+    none: { name: 'Sans bec verseur', nameZh: '无', instId: '', unitCost: 0, minFee: 0, weightG: 0 },
     spout_5mm: { name: 'Micro-bec 5 mm', nameZh: '5mm', instId: 'GRAVURE-SPOUT-5', unitCost: 0.120, minFee: 80, weightG: 1.79 },
     spout_8_6mm: { name: 'Bec fin 8,6 mm', nameZh: '8.6mm', instId: 'GRAVURE-SPOUT-8.6', unitCost: 0.130, minFee: 80, weightG: 2.76 },
-    spout_10mm: { name: 'Bouchon / Bec 10 mm', nameZh: '10mm', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMML8U1', unitCost: 0.160, minFee: 100, weightG: 3.6 },
+    spout_10mm: { name: 'Bouchon / Bec 10 mm', nameZh: '10mm', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMM09U1', unitCost: 0.195, minFee: 100, weightG: 3.6 },
     spout_13mm: { name: 'Bec 13 mm', nameZh: '13mm', instId: 'GRAVURE-SPOUT-13', unitCost: 0.200, minFee: 100, weightG: 4.1 },
-    spout_16mm: { name: 'Bouchon / Bec 16 mm', nameZh: '16mm', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMM8U1', unitCost: 0.220, minFee: 100, weightG: 6.1 },
+    spout_16mm: { name: 'Bouchon / Bec 16 mm', nameZh: '16mm', instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMM19U1', unitCost: 0.220, minFee: 100, weightG: 6.1 },
     spout_20mm: { name: 'Large goulot 20 mm', nameZh: '20mm', instId: 'GRAVURE-SPOUT-20', unitCost: 0.280, minFee: 120, weightG: 8.3 },
     spout_26mm: { name: 'Goulot XL 26 mm', nameZh: '26mm', instId: 'GRAVURE-SPOUT-26', unitCost: 0.380, minFee: 140, weightG: 9.0 },
     spout_33mm: { name: 'Goulot XXL 33 mm', nameZh: '33mm', instId: 'GRAVURE-SPOUT-33', unitCost: 0.440, minFee: 150, weightG: 14.5 }
@@ -253,7 +293,7 @@ export const FINISHES_CATALOG = {
   valve: {
     name: 'Valve dégazage arôme unidirectionnelle',
     nameZh: '单向透气阀',
-    instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMN8U1',
+    instId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMY8U1',
     unitCost: 0.220,
     minFee: 100,
     weightG: 0.6,
@@ -345,6 +385,45 @@ export interface MachineImpositionMetrics {
   quoteSpecZh: string;
 }
 
+export interface LayerCostDetail {
+  slot: string;
+  roleFr: string;
+  code: string;
+  nameFr: string;
+  thicknessSilk: number;
+  thicknessUm: number;
+  density: number;
+  pricePerKgCny: number;
+  gsm: number;
+  weightTotalKg: number;
+  rawCostCny: number;
+  costWithWasteCny: number;
+  costEur: number;
+}
+
+export interface AccessoryCostDetail {
+  key: string;
+  label: string;
+  formulaNote: string;
+  costCny: number;
+  costEur: number;
+}
+
+export interface GacheBreakdown {
+  baseRotations: number;
+  bottomExtraRotations: number;
+  startupRotations: number;
+  printSetupRotations: number;
+  multiSkuRotations: number;
+  dieCutRotations: number;
+  bagWasteRotations: number;
+  extraWebRotations: number;
+  wasteMetersTotal: number;
+  totalPrintMeters: number;
+  bagMakingMeters: number;
+  webWidthUsedCm: number;
+}
+
 export interface QuoteBreakdown {
   technology: PrintTechnology;
   resolvedQuantity: number;
@@ -384,8 +463,12 @@ export interface QuoteBreakdown {
 
   weightUnitGrams: number;
   weightTotalKg: number;
+  totalBasisGsm: number;
   cylinderCount: number;
   cylinderFeePerUnitCny: number;
+  layerBreakdown: LayerCostDetail[];
+  accessoryBreakdown: AccessoryCostDetail[];
+  gacheBreakdown: GacheBreakdown;
   imposition: MachineImpositionMetrics;
 }
 
@@ -463,14 +546,23 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
   const shippingMode: ShippingMode = dim.shippingMode || 'none';
   const qt00 = Math.max(0, Number(dim.extraFeeCny) || 0);
 
-  // 1. Résolution dxcs
+  // 1. Résolution dxcs (et mapping variantes Hélio Easy-Peel / Slider sur leurs gabarits dxcs)
   let zipId = dim.zipperInstId;
   const validZipIdsForBag = bagDef.zipperOptions.map(z => z.instId);
   if (!zipId || !validZipIdsForBag.includes(zipId)) {
     const matchedOption = bagDef.zipperOptions.find(z => dim.hasZip ? z.hasZip : !z.hasZip);
     zipId = matchedOption ? matchedOption.instId : bagDef.zipperOptions[0].instId;
   }
-  const dxcsItem = uData.utils.getPickerData({ instanceId: zipId, arr: uData.organConfig.dxcs, key: 'id' });
+  const GRAVURE_ZIP_FALLBACK: Record<string, string> = {
+    'GRAVURE-STANDUP-EASYPEEL': 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMX822',
+    'GRAVURE-STANDUP-SLIDER': 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMX822',
+    'GRAVURE-3SIDE-EASYPEEL': 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMU822',
+    'GRAVURE-4SIDE-SLIDER': 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMM6922'
+  };
+  const resolvedDxcsId = GRAVURE_ZIP_FALLBACK[zipId] || zipId;
+  const isSliderZip = zipId === 'GRAVURE-STANDUP-SLIDER' || zipId === 'GRAVURE-4SIDE-SLIDER';
+  const isEasyPeelZip = zipId === 'GRAVURE-STANDUP-EASYPEEL' || zipId === 'GRAVURE-3SIDE-EASYPEEL';
+  const dxcsItem = uData.utils.getPickerData({ instanceId: resolvedDxcsId, arr: uData.organConfig.dxcs, key: 'id' });
 
   // 2. Couches matériaux (Monocouche 1 couche vs Composite 2-5 couches)
   const isSingleLayer = Boolean(dim.customLayers?.isSingleLayer);
@@ -547,11 +639,11 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
     }
   }
 
-  // 3. Mode d'impression
+  // 3. Mode d'impression (IDs exacts validés sur databases_clean.json -> gxcb)
   const printModeInstMap: Record<DigitalPrintMode, string> = {
-    none: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMD8U1',
+    none: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMU8U1',
     cmyk_white: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMO8U1',
-    cmyk_white_inside: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMI8U1'
+    cmyk_white_inside: 'FINST-GOE669A1TB944FKNPGBCI9ZTUP5V3PJY1S2NMQTB'
   };
   const ysItem = uData.utils.getPickerData({
     instanceId: printModeInstMap[digitalPrintMode],
@@ -565,7 +657,13 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
   const spoutKey: SpoutSizeKey = dim.finishes?.spoutSize || 'none';
   const spoutConfig = FINISHES_CATALOG.spouts[spoutKey] || FINISHES_CATALOG.spouts.none;
   const valveConfig = dim.finishes?.hasDegassingValve ? FINISHES_CATALOG.valve : null;
-  const handleConfig = dim.finishes?.hasHangingHole ? FINISHES_CATALOG.handle : null;
+  const handleVariantKey: HandleVariantKey = dim.finishes?.handleVariant || 'standard';
+  const handleConfig = dim.finishes?.hasHangingHole ? HANDLE_VARIANTS_CATALOG[handleVariantKey] : null;
+  const adhesiveKey: AdhesiveVariantKey = dim.finishes?.adhesiveVariant || (dim.finishes?.hasAdhesiveStrip ? 'standard' : 'none');
+  const adhesiveConfig = ADHESIVE_VARIANTS_CATALOG[adhesiveKey] || ADHESIVE_VARIANTS_CATALOG.none;
+  const inkCoverageKey: InkCoverageLevel = dim.finishes?.inkCoverageLevel || (dim.finishes?.fullInkCoverage ? 'single_full' : '20_50');
+  const inkCoverageObj = INK_COVERAGE_CATALOG.find(c => c.key === inkCoverageKey) || INK_COVERAGE_CATALOG[1];
+  const pantoneList: PantoneColorKey[] = dim.finishes?.pantoneColors || [];
 
   // 5. Paramètres globaux usine (qtcs & dxcs)
   const qtcs = uData.organConfig.qtcs;
@@ -708,8 +806,38 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
   const webWidthUsedCm = isGravure ? Math.min(100, Math.max(40, safeMkpb1 * gg_mkz1 + 2)) : qt04;
   const totalFilmSqm = M((clms * webWidthUsedCm) / 100, 2);
 
-  // 8. Coûts par poste
+  // 8. Coûts par poste — avec ventilation détaillée couche par couche
   const js_cl01 = webWidthUsedCm * qt06 * (sh_hs + gg_lzs + gg_lzs3 + sh_cs);
+  const rawLayerSlots = [
+    { slot: 'Couche 1', roleFr: 'Impression Ext.', item: yscItem, dj: yc_dj01, md: yc_md01, hd: yc_hd01, jc: yc_jc01 },
+    { slot: 'Couche 2', roleFr: 'Barrière 1', item: zgc1Item, dj: zc1_dj01, md: zc1_md01, hd: zc1_hd01, jc: zc1_jc01 },
+    { slot: 'Couche 3', roleFr: 'Barrière 2', item: zgc2Item, dj: zc2_dj01, md: zc2_md01, hd: zc2_hd01, jc: zc2_jc01 },
+    { slot: 'Couche 4', roleFr: 'Barrière 3', item: zgc3Item, dj: zc3_dj01, md: zc3_md01, hd: zc3_hd01, jc: zc3_jc01 },
+    { slot: 'Couche 5', roleFr: 'Scellage Int.', item: rfcItem, dj: rc_dj01, md: rc_md01, hd: rc_hd01, jc: rc_jc01 }
+  ].filter(l => Boolean(l.jc));
+
+  const layerBreakdown: LayerCostDetail[] = rawLayerSlots.map(l => {
+    const gsm = parseFloat((l.md * l.hd * 10).toFixed(2));
+    const weightTotalKg = parseFloat(((totalFilmSqm * gsm) / 1000).toFixed(2));
+    const rawCostCny = (js_cl01 * (l.dj * l.md * l.hd)) / 1000000;
+    const costWithWasteCny = parseFloat((rawCostCny * (1 + qt19 / 100)).toFixed(2));
+    return {
+      slot: l.slot,
+      roleFr: l.roleFr,
+      code: l.jc,
+      nameFr: l.item.textField_a0wryjb || l.jc,
+      thicknessSilk: l.hd,
+      thicknessUm: Math.round(l.hd * 10),
+      density: l.md,
+      pricePerKgCny: l.dj,
+      gsm,
+      weightTotalKg,
+      rawCostCny: parseFloat(rawCostCny.toFixed(2)),
+      costWithWasteCny,
+      costEur: parseFloat((costWithWasteCny * CNY_TO_EUR_RATE).toFixed(2))
+    };
+  });
+
   const costPerSqm5Layers =
     yc_dj01 * yc_md01 * yc_hd01 +
     zc1_dj01 * zc1_md01 * zc1_hd01 +
@@ -730,10 +858,13 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
   const cylinderCount = isGravure ? (dim.cylinderCount !== undefined ? dim.cylinderCount : 6) : 0;
 
   if (!isGravure) {
-    const gx_ys01 = Number(ysItem.numberField_w5opr46) ?? 2.7;
-    const gx_ys02 = Number(ysItem.numberField_c2jyl6f) ?? 100;
+    const rawRate = ysItem.numberField_w5opr46;
+    const rawMin = ysItem.numberField_c2jyl6f;
+    const gx_ys01 = rawRate !== undefined && rawRate !== null && !Number.isNaN(Number(rawRate)) ? Number(rawRate) : (digitalPrintMode === 'none' ? 0 : digitalPrintMode === 'cmyk_white_inside' ? 5.35 : 2.7);
+    const gx_ys02 = rawMin !== undefined && rawMin !== null && !Number.isNaN(Number(rawMin)) ? Number(rawMin) : (digitalPrintMode === 'none' ? 0 : 100);
     const baseDigitalPrint = gx_ys01 === 0 ? 0 : MAX(gx_ys02, yslz_cs * gx_ys01 + sh_hs * qt01);
-    js_ys = M((baseDigitalPrint + uvTotalCost + matteExtraCost) * (1 + qt19 / 100), 2);
+    const inkMultDigital = inkCoverageObj.key === 'single_full' ? 1.15 : inkCoverageObj.key === 'double_full' ? 1.30 : 1.0;
+    js_ys = M((baseDigitalPrint * inkMultDigital + uvTotalCost + matteExtraCost) * (1 + qt19 / 100), 2);
   } else {
     const gravureSetupCny = cylinderCount === 0 ? 0 : cylinderCount * 200;
     const gravureInkPerSqmTable: Record<number, number> = {
@@ -741,8 +872,13 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
       6: 0.705, 7: 0.805, 8: 0.855, 9: 0.905, 10: 0.955
     };
     const inkRatePerSqm = gravureInkPerSqmTable[cylinderCount] ?? 0.705;
-    const fullInkMultiplier = dim.finishes?.fullInkCoverage ? 1.20 : 1.0;
-    const baseGravurePrint = MAX(gravureSetupCny, totalFilmSqm * inkRatePerSqm * fullInkMultiplier);
+    const pantoneExtraSqm = pantoneList.reduce((acc, pKey) => {
+      const pObj = PANTONE_COLORS_CATALOG.find(c => c.key === pKey);
+      return acc + (pObj ? pObj.sqmSurchargeCny : 0);
+    }, 0);
+    const baseGravurePrint = cylinderCount === 0 && pantoneList.length === 0
+      ? 0
+      : MAX(gravureSetupCny, totalFilmSqm * (inkRatePerSqm * inkCoverageObj.rateMultiplier + pantoneExtraSqm));
     js_ys = M((baseGravurePrint + uvTotalCost + matteExtraCost) * (1 + qt19 / 100), 2);
   }
 
@@ -771,16 +907,18 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
     }
   }
 
-  // Poste 4 : Façonnage (Allégé automatiquement en mode monocouche / bobine)
+  // Poste 4 : Façonnage (Allégé automatiquement en mode monocouche / bobine, majoré pour Slider/Easy-Peel)
   const singleLayerBagDiscount = isSingleLayer ? 0.55 : 1.0;
   const rollConversionDiscount = dim.bagType === 'roll_film' ? 0.28 : 1.0;
-  const zd02 = M(MAX(zd02_base, (qty / (zdms || 1)) * zd03), 3);
+  const effectiveZdBase = isSliderZip ? Math.max(zd02_base, isGravure ? 0.65 : 0.75) : isEasyPeelZip ? Math.max(zd02_base, 0.55) : zd02_base;
+  const effectiveZdMin = isSliderZip ? Math.max(zd01, 450) : isEasyPeelZip ? Math.max(zd01, 380) : zd01;
+  const zd02 = M(MAX(effectiveZdBase, (qty / (zdms || 1)) * zd03), 3);
   const unwindingMultiplier = (bottomMode === 2 || bottomMode === 3 || (bottomMode === 1 && gg_fljy.startsWith('双放料')))
     ? 1
     : (bottomMode === 4 || bottomMode === 5) ? 2 : 0;
 
   const baseBagMaking =
-    (MAX(zd01 * singleLayerBagDiscount * rollConversionDiscount, zdms * zd02 * singleLayerBagDiscount * rollConversionDiscount) +
+    (MAX(effectiveZdMin * singleLayerBagDiscount * rollConversionDiscount, zdms * zd02 * singleLayerBagDiscount * rollConversionDiscount) +
     unwindingMultiplier * zdms * zd05 +
     ((gg_k * zd04) / 100 + (kg_sqmq === '双切' ? zd06 : zd07)) * qty * rollConversionDiscount);
 
@@ -788,7 +926,7 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
   const js_mjf = kg_sqmq === '模切' ? M(qt02 * (1 + qt19 / 100), 2) : 0;
   const skuSurchargeCny = gg_ks >= 4 ? M((gg_ks - 3) * qt08 * (1 + qt19 / 100), 2) : 0;
 
-  // Poste 5 : Poids + Accessoires
+  // Poste 5 : Poids + Accessoires (avec détail poste par poste)
   const accessoryWeightG =
     spoutConfig.weightG +
     (valveConfig ? valveConfig.weightG : 0) +
@@ -807,8 +945,9 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
     unfoldedAreaCm2 = gg_k * gg_g;
   }
 
+  const totalBasisGsm = parseFloat((totalBasisWeight * 10).toFixed(1));
   const wasteFactorWeight = dim.bagType === 'roll_film' ? 1.02 : 1.15;
-  const singleWeightG = M(((unfoldedAreaCm2 / 10000) * (totalBasisWeight * 10) * wasteFactorWeight) + accessoryWeightG, 2);
+  const singleWeightG = M(((unfoldedAreaCm2 / 10000) * totalBasisGsm * wasteFactorWeight) + accessoryWeightG, 2);
   const totalWeightKg = Math.max(1, Math.round((singleWeightG * qty) / 1000));
 
   const xz_cost = spoutConfig.unitCost > 0 ? MAX(spoutConfig.minFee, spoutConfig.unitCost * qty) : 0;
@@ -820,10 +959,25 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
     ? MAX(winCount === 2 ? 900 : 700, zdms * (winCount === 2 ? 0.06 : 0.05)) * (isGravure ? 1 : 0.35)
     : 0;
   const embossingCost = dim.finishes?.hasEmbossing ? MAX(300, zdms * 0.10 + qty * 0.015) : 0;
-  const adhesiveCost = dim.finishes?.hasAdhesiveStrip ? MAX(100, zdms * 0.05 + qty * 0.012) : 0;
+  const adhesiveCost = adhesiveKey !== 'none'
+    ? MAX(adhesiveConfig.minFee, zdms * adhesiveConfig.meterRateCny + qty * adhesiveConfig.unitCostCny)
+    : 0;
+  const cartonCostRaw = qt07 * totalWeightKg;
+  const rawSkuExtra = gg_ks >= 4 ? (gg_ks - 3) * qt08 : 0;
+
+  const accessoryBreakdown: AccessoryCostDetail[] = [
+    xz_cost > 0 ? { key: 'spout', label: spoutConfig.name, formulaNote: `max(${spoutConfig.minFee}¥, ${spoutConfig.unitCost}×${qty})`, costCny: M(xz_cost * (1 + qt19 / 100), 2), costEur: M(xz_cost * (1 + qt19 / 100) * CNY_TO_EUR_RATE, 2) } : null,
+    tqf_cost > 0 ? { key: 'valve', label: 'Valve dégazage arôme', formulaNote: `max(${valveConfig?.minFee}¥, 0.22×${qty})`, costCny: M(tqf_cost * (1 + qt19 / 100), 2), costEur: M(tqf_cost * (1 + qt19 / 100) * CNY_TO_EUR_RATE, 2) } : null,
+    stk_cost > 0 && handleConfig ? { key: 'handle', label: handleConfig.nameFr, formulaNote: `max(${handleConfig.minFee}¥, ${handleConfig.unitCost}×${qty})`, costCny: M(stk_cost * (1 + qt19 / 100), 2), costEur: M(stk_cost * (1 + qt19 / 100) * CNY_TO_EUR_RATE, 2) } : null,
+    windowCost > 0 ? { key: 'window', label: `Fenêtre Kraft découpée (${winCount}×)`, formulaNote: `${zdms}m découpés`, costCny: M(windowCost * (1 + qt19 / 100), 2), costEur: M(windowCost * (1 + qt19 / 100) * CNY_TO_EUR_RATE, 2) } : null,
+    embossingCost > 0 ? { key: 'emboss', label: 'Gaufrage / Embossage (压纹)', formulaNote: `max(300¥, métrage+qté)`, costCny: M(embossingCost * (1 + qt19 / 100), 2), costEur: M(embossingCost * (1 + qt19 / 100) * CNY_TO_EUR_RATE, 2) } : null,
+    adhesiveCost > 0 ? { key: 'adhesive', label: adhesiveConfig.nameFr, formulaNote: `${zdms}m + ${qty} pcs`, costCny: M(adhesiveCost * (1 + qt19 / 100), 2), costEur: M(adhesiveCost * (1 + qt19 / 100) * CNY_TO_EUR_RATE, 2) } : null,
+    cartonCostRaw > 0 ? { key: 'cartons', label: 'Cartons & emballage export', formulaNote: `${totalWeightKg} kg × ${qt07} ¥/kg (+3% perte)`, costCny: M(cartonCostRaw * (1 + qt19 / 100), 2), costEur: M(cartonCostRaw * (1 + qt19 / 100) * CNY_TO_EUR_RATE, 2) } : null,
+    rawSkuExtra > 0 ? { key: 'sku', label: `Surcoût multi-visuels (${gg_ks} SKU)`, formulaNote: `(${gg_ks}-3) × ${qt08}¥`, costCny: M(rawSkuExtra * (1 + qt19 / 100), 2), costEur: M(rawSkuExtra * (1 + qt19 / 100) * CNY_TO_EUR_RATE, 2) } : null
+  ].filter((x): x is AccessoryCostDetail => Boolean(x));
 
   const js_qt = M(
-    (xz_cost + stk_cost + tqf_cost + windowCost + embossingCost + adhesiveCost + qt07 * totalWeightKg + (gg_ks >= 4 ? (gg_ks - 3) * qt08 : 0)) *
+    (xz_cost + stk_cost + tqf_cost + windowCost + embossingCost + adhesiveCost + cartonCostRaw + rawSkuExtra) *
       (1 + qt19 / 100),
     2
   );
@@ -941,12 +1095,14 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
 
   const finishesListFr = [
     uvKey !== 'none' ? uvConfig.name : null,
+    hasMatte && uvKey !== 'matte_varnish' ? 'Vernis mat Soft-Touch' : null,
+    pantoneList.length > 0 ? `Pantone: ${pantoneList.map(k => PANTONE_COLORS_CATALOG.find(p => p.key === k)?.labelFr).filter(Boolean).join(' + ')}` : null,
     spoutKey !== 'none' ? spoutConfig.name : null,
     valveConfig ? 'Valve dégazage café' : null,
-    handleConfig ? 'Poignée découpée' : null,
+    handleConfig ? handleConfig.nameFr : null,
     dim.finishes?.hasWindow ? `Fenêtre transparente (${winCount})` : null,
     dim.finishes?.hasEmbossing ? 'Gaufrage texture relief' : null,
-    dim.finishes?.hasAdhesiveStrip ? 'Bande adhésive refermable' : null
+    adhesiveKey !== 'none' ? adhesiveConfig.nameFr : null
   ].filter(Boolean).join(', ') || 'Finition standard brute';
 
   const quoteSpecFr = [
@@ -966,12 +1122,28 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
     `袋型：${bagDef.nameZh}${isSingleLayer ? '(单层)' : '(复合)'}(${zipOpt.labelZh})(${kg_sqmq})`,
     `尺寸：宽${gg_k}*高${gg_g}${gg_d > 0 ? `*底/琴${gg_d}` : ''}cm`,
     `材质结构：${layersSummaryZh}`,
-    `印刷工艺：${isGravure ? `凹版${cylinderCount}色(版费${totalCylindersCost}元)` : (ysItem.textField_dzk31za || ysItem.selectField_l791w79 || 'CMYK单白')}+${uvConfig.nameZh}`,
-    `配件：吸嘴(${spoutConfig.nameZh})、手提扣(${handleConfig ? handleConfig.nameZh : '无'})、透气阀(${valveConfig ? '有' : '无'})`,
+    `印刷工艺：${isGravure ? `凹版${cylinderCount}色(${inkCoverageObj.labelZh}${pantoneList.length ? `+专色${pantoneList.map(k => PANTONE_COLORS_CATALOG.find(p => p.key === k)?.labelZh).join('/')}` : ''},版费${totalCylindersCost}元)` : (ysItem.textField_dzk31za || (digitalPrintMode === 'none' ? '不印刷' : digitalPrintMode === 'cmyk_white_inside' ? 'CMYK单白+里印' : 'CMYK单白'))}+${uvConfig.nameZh}`,
+    `配件：吸嘴(${spoutConfig.nameZh})、手提扣(${handleConfig ? handleConfig.nameZh : '无'})、透气阀(${valveConfig ? '有' : '无'})${adhesiveKey !== 'none' ? `、${adhesiveConfig.nameZh}` : ''}`,
     `数量：${qty}个 (${gg_ks}款)`,
     `单价：${resalePriceUnitCny.toFixed(3)}元/个 | 总价：${resalePriceTotalCny.toFixed(0)}元`,
     `预计重量：${totalWeightKg}kg | 预计出货：${estimatedShipDate} (${leadTimeDays}天)`
   ].join('\n');
+
+  const wasteMetersTotal = M((sh_hs + sh_cs) * (qt06 / 100), 2);
+  const gacheBreakdown: GacheBreakdown = {
+    baseRotations: gg_lzs,
+    bottomExtraRotations: gg_lzs3,
+    startupRotations: sh_jchs,
+    printSetupRotations: sh_ys,
+    multiSkuRotations: sh_ks,
+    dieCutRotations: sh_mq,
+    bagWasteRotations: sh_zd,
+    extraWebRotations: sh_zdzs,
+    wasteMetersTotal,
+    totalPrintMeters: clms,
+    bagMakingMeters: zdms,
+    webWidthUsedCm
+  };
 
   return {
     technology: dim.technology,
@@ -1012,8 +1184,12 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
 
     weightUnitGrams: singleWeightG,
     weightTotalKg: totalWeightKg,
+    totalBasisGsm,
     cylinderCount,
     cylinderFeePerUnitCny: isGravure ? parseFloat((totalCylindersCost / qty).toFixed(3)) : 0,
+    layerBreakdown,
+    accessoryBreakdown,
+    gacheBreakdown,
     imposition: {
       webPoses: gg_mkpb1,
       cylinderPoses: gg_mcpb1,

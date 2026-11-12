@@ -1,126 +1,191 @@
 import React from 'react';
 import {
-  CNY_TO_EUR_RATE,
+  ADHESIVE_VARIANTS_CATALOG,
+  AdhesiveVariantKey,
   FINISHES_CATALOG,
   FinishesOptions,
+  HANDLE_VARIANTS_CATALOG,
+  HandleVariantKey,
+  INK_COVERAGE_CATALOG,
+  InkCoverageLevel,
+  PANTONE_COLORS_CATALOG,
+  PantoneColorKey,
   PrintTechnology,
   SpoutSizeKey
 } from '../pricingEngine';
-import { Check, Sparkles } from 'lucide-react';
+import { Check, Droplets, Layers, Palette, Scissors, Sparkles } from 'lucide-react';
 
 interface FinishesStudioProps {
-  finishes: FinishesOptions;
-  onChange: (next: FinishesOptions) => void;
   technology: PrintTechnology;
+  finishes: FinishesOptions;
+  cuttingType: 'double_cut' | 'die_cut';
+  onChangeFinishes: (updater: (prev: FinishesOptions) => FinishesOptions) => void;
+  onChangeCuttingType: (next: 'double_cut' | 'die_cut') => void;
 }
 
-type UvOptionKey = NonNullable<FinishesOptions['uvEnhancement']>;
-
-const UV_OPTIONS: {
-  key: UvOptionKey;
+const VISUAL_SURFACE_FINISHES: {
+  key: NonNullable<FinishesOptions['uvEnhancement']>;
   title: string;
   subtitle: string;
-  imageUrl?: string;
-  tag?: string;
+  rateNote: string;
+  imageUrl: string;
+  activeBorder: string;
+  gravureOnly?: boolean;
 }[] = [
-  { key: 'none', title: 'Standard Brut', subtitle: 'Rendu film natif sans vernis additionnel' },
-  { key: 'matte_varnish', title: 'Vernis Mat Soft-Touch', subtitle: 'Toucher velouté intégral anti-reflets', imageUrl: '/images/finishes/matte.jpg' },
-  { key: 'spot_uv', title: 'Vernis Sélectif (Spot UV)', subtitle: 'Surbrillance localisée sur zones graphiques', imageUrl: '/images/finishes/spot-uv.jpg' },
-  { key: 'thick_uv', title: 'Vernis Relief 3D (Épais)', subtitle: 'Surépaisseur tactile haut relief sur logo', imageUrl: '/images/finishes/spot-uv.jpg', tag: '3D Tactile' },
-  { key: 'hot_stamping', title: 'Dorure à Chaud', subtitle: 'Frappe film métallisé or, cuivre ou argent', imageUrl: '/images/finishes/hot-foil.jpg', tag: 'Luxe' },
-  { key: 'cold_foil', title: 'Dorure à Froid (Hélio)', subtitle: 'Finesse micro-détails en ligne continue', imageUrl: '/images/finishes/hot-foil.jpg' },
-  { key: 'uv_and_hot_stamping', title: 'Spot UV + Dorure à Chaud', subtitle: 'Double ennoblissement prestige combiné', imageUrl: '/images/finishes/hot-foil.jpg', tag: 'Signature' },
+  {
+    key: 'none',
+    title: 'Surface Standard',
+    subtitle: 'Brillant / Mat de base sans vernis',
+    rateNote: '0 ¥ inclus',
+    imageUrl: '',
+    activeBorder: 'border-cyan-400 bg-cyan-500/15 ring-1 ring-cyan-400/40'
+  },
+  {
+    key: 'matte_varnish',
+    title: 'Vernis Mat Intégral',
+    subtitle: 'Soft-Touch anti-reflets (满版哑油)',
+    rateNote: '+0.40 ¥/tour · min 100¥',
+    imageUrl: '/images/finishes/matte.jpg',
+    activeBorder: 'border-sky-400 bg-sky-500/15 ring-1 ring-sky-400/40'
+  },
+  {
+    key: 'spot_uv',
+    title: 'Vernis Sélectif Spot UV',
+    subtitle: 'Contraste brillant tactile (局部UV)',
+    rateNote: '+1.00 ¥/tour · min 400¥',
+    imageUrl: '/images/finishes/spot-uv.jpg',
+    activeBorder: 'border-purple-400 bg-purple-500/15 ring-1 ring-purple-400/40'
+  },
+  {
+    key: 'thick_uv',
+    title: 'Vernis 3D Relief Épais',
+    subtitle: 'Effet goutte surélevé (厚UV)',
+    rateNote: '+1.70 ¥/tour · min 500¥',
+    imageUrl: '/images/finishes/spot-uv.jpg',
+    activeBorder: 'border-pink-400 bg-pink-500/15 ring-1 ring-pink-400/40'
+  },
+  {
+    key: 'hot_stamping',
+    title: 'Dorure à Chaud Or',
+    subtitle: 'Feuille métallisée à chaud (烫金)',
+    rateNote: '+1.60 ¥/tour · min 400¥',
+    imageUrl: '/images/finishes/hot-foil.jpg',
+    activeBorder: 'border-amber-400 bg-amber-500/15 ring-1 ring-amber-400/40'
+  },
+  {
+    key: 'cold_foil',
+    title: 'Dorure à Froid Hélio',
+    subtitle: 'Haute finesse continu (冷烫)',
+    rateNote: '+1.80 ¥/tour · min 500¥',
+    imageUrl: '/images/finishes/hot-foil.jpg',
+    activeBorder: 'border-indigo-400 bg-indigo-500/15 ring-1 ring-indigo-400/40',
+    gravureOnly: true
+  },
+  {
+    key: 'uv_and_hot_stamping',
+    title: 'Combiné Spot UV + Or',
+    subtitle: 'Double passage prestige (UV+烫金)',
+    rateNote: '+1.80 ¥/tour · min 600¥',
+    imageUrl: '/images/finishes/hot-foil.jpg',
+    activeBorder: 'border-amber-400 bg-amber-500/15 ring-1 ring-amber-400/40'
+  }
 ];
 
-const SPOUT_SIZES: { key: SpoutSizeKey; label: string; diameter: string }[] = [
-  { key: 'none', label: 'Aucun', diameter: '—' },
-  { key: 'spout_5mm', label: '5 mm', diameter: '5mm' },
-  { key: 'spout_8_6mm', label: '8,6 mm', diameter: '8.6mm' },
-  { key: 'spout_10mm', label: '10 mm', diameter: '10mm' },
-  { key: 'spout_13mm', label: '13 mm', diameter: '13mm' },
-  { key: 'spout_16mm', label: '16 mm', diameter: '16mm' },
-  { key: 'spout_20mm', label: '20 mm', diameter: '20mm' },
-  { key: 'spout_26mm', label: '26 mm', diameter: '26mm' },
-  { key: 'spout_33mm', label: '33 mm', diameter: '33mm' }
+const SPOUT_OPTIONS: { key: SpoutSizeKey; label: string; meta: string }[] = [
+  { key: 'none', label: 'Aucun bec', meta: '—' },
+  { key: 'spout_5mm', label: 'Ø 5 mm', meta: '0.12¥' },
+  { key: 'spout_8_6mm', label: 'Ø 8,6 mm', meta: '0.13¥' },
+  { key: 'spout_10mm', label: 'Ø 10 mm', meta: '0.195¥' },
+  { key: 'spout_13mm', label: 'Ø 13 mm', meta: '0.20¥' },
+  { key: 'spout_16mm', label: 'Ø 16 mm', meta: '0.22¥' },
+  { key: 'spout_20mm', label: 'Ø 20 mm', meta: '0.28¥' },
+  { key: 'spout_26mm', label: 'Ø 26 mm', meta: '0.38¥' },
+  { key: 'spout_33mm', label: 'Ø 33 mm', meta: '0.44¥' }
 ];
 
 export const FinishesStudio: React.FC<FinishesStudioProps> = ({
+  technology,
   finishes,
-  onChange,
-  technology
+  cuttingType,
+  onChangeFinishes,
+  onChangeCuttingType
 }) => {
   const activeUv = finishes.uvEnhancement || 'none';
   const activeSpout = finishes.spoutSize || 'none';
+  const activeCoverage: InkCoverageLevel = finishes.inkCoverageLevel || (finishes.fullInkCoverage ? 'single_full' : '20_50');
+  const activePantones = finishes.pantoneColors || [];
+  const activeHandle: HandleVariantKey = finishes.handleVariant || 'standard';
+  const activeAdhesive: AdhesiveVariantKey = finishes.adhesiveVariant || (finishes.hasAdhesiveStrip ? 'standard' : 'none');
+
+  const togglePantone = (pKey: PantoneColorKey) => {
+    onChangeFinishes(prev => {
+      const curr = prev.pantoneColors || [];
+      const exists = curr.includes(pKey);
+      return {
+        ...prev,
+        pantoneColors: exists ? curr.filter(k => k !== pKey) : [...curr, pKey]
+      };
+    });
+  };
 
   return (
-    <div className="space-y-6">
-      {/* 1. Ennoblissements Surface & Vernis (Cartes Photo Macro Nano Banana) */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-maison-slate">
-              Ennoblissements de Surface & Marquages
-            </h4>
-            <p className="text-xs text-maison-muted mt-0.5">
-              Sélectionnez le traitement de surface appliqué après impression
-            </p>
-          </div>
-          {activeUv !== 'none' && (
-            <span className="text-[11px] font-mono text-maison-brass font-medium">
-              Forfait min. {FINISHES_CATALOG.uv[activeUv]?.minFee || 0} ¥
-            </span>
-          )}
+    <div className="bg-[#0c1322] border border-slate-800/80 rounded-2xl p-4 shadow-cockpit space-y-4">
+      <div className="flex items-center justify-between pb-2.5 border-b border-slate-800/80">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+            3. Finitions Tactiles & Accessoires (`gxcb`)
+          </span>
         </div>
+        <span className="text-[10px] font-mono text-slate-400">
+          {technology === 'gravure' ? '44 procédés hélio' : '12 procédés numériques'}
+        </span>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {UV_OPTIONS.filter(opt => technology === 'gravure' || opt.key !== 'cold_foil').map((opt) => {
-            const isSelected = activeUv === opt.key;
-            const cfg = FINISHES_CATALOG.uv[opt.key];
+      {/* CARTES MACRO NANO BANANA : VERNIS, SPOT UV, DORURE */}
+      <div>
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-2">
+          Traitements de Surface & Dorures Métalliques
+        </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {VISUAL_SURFACE_FINISHES.filter(f => !f.gravureOnly || technology === 'gravure').map((finish) => {
+            const isSelected = activeUv === finish.key;
             return (
               <button
-                key={opt.key}
+                key={finish.key}
                 type="button"
-                onClick={() =>
-                  onChange({
-                    ...finishes,
-                    uvEnhancement: opt.key,
-                    hasMatteVarnish: opt.key === 'matte_varnish' ? true : finishes.hasMatteVarnish
-                  })
-                }
-                className={`group flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+                onClick={() => onChangeFinishes(prev => ({
+                  ...prev,
+                  uvEnhancement: finish.key,
+                  hasMatteVarnish: finish.key === 'matte_varnish' ? true : prev.hasMatteVarnish
+                }))}
+                className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
                   isSelected
-                    ? 'border-[#171614] bg-maison-canvas/70 ring-1 ring-[#171614]'
-                    : 'border-maison-border bg-white hover:border-maison-borderStrong'
+                    ? finish.activeBorder
+                    : 'bg-[#080d18] border-slate-800 hover:border-slate-700'
                 }`}
               >
-                <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-[#EFEBE2] border border-maison-border flex items-center justify-center">
-                  {opt.imageUrl ? (
+                <div className="w-12 h-12 rounded-lg bg-[#F4F1EA] border border-slate-700/60 overflow-hidden shrink-0 flex items-center justify-center">
+                  {finish.imageUrl ? (
                     <img
-                      src={opt.imageUrl}
-                      alt={opt.title}
+                      src={finish.imageUrl}
+                      alt={finish.title}
+                      className="w-full h-full object-cover"
                       loading="lazy"
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="w-6 h-6 rounded-full border-2 border-dashed border-maison-muted/50" />
+                    <Layers className="w-5 h-5 text-slate-600" />
                   )}
                 </div>
-
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-maison-ink truncate">
-                      {opt.title}
+                    <span className="text-[11px] font-bold text-slate-100 truncate">
+                      {finish.title}
                     </span>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-[#171614] shrink-0" />}
+                    {isSelected && <Check className="w-3.5 h-3.5 text-cyan-300 shrink-0" />}
                   </div>
-                  <p className="text-[11px] text-maison-muted leading-snug mt-0.5 line-clamp-2">
-                    {opt.subtitle}
-                  </p>
-                  {cfg && cfg.minFee > 0 && (
-                    <div className="mt-1 text-[10px] font-mono text-maison-brass tabular-nums">
-                      Dès {(cfg.minFee * CNY_TO_EUR_RATE).toFixed(0)} € ({cfg.unitCost.toFixed(2)} ¥/m ou tour)
-                    </div>
-                  )}
+                  <div className="text-[10px] text-slate-400 truncate">{finish.subtitle}</div>
+                  <div className="text-[10px] font-mono text-amber-300 mt-0.5 tabular-nums">{finish.rateNote}</div>
                 </div>
               </button>
             );
@@ -128,198 +193,258 @@ export const FinishesStudio: React.FC<FinishesStudioProps> = ({
         </div>
       </div>
 
-      {/* 2. Accessoires Techniques & Façonnage Sur-Mesure */}
-      <div className="pt-4 border-t border-maison-border">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-maison-slate mb-3">
-          Accessoires Fonctionnels & Découpes Techniques
-        </h4>
+      {/* TOGGLES ACCESSOIRES FONCTIONNELS (VALVE Nano Banana + FENÊTRE + POIGNÉE + COUPE + GAUFRAGE + ADHÉSIF) */}
+      <div className="pt-3 border-t border-slate-800/80 space-y-3">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">
+          Accessoires Fonctionnels & Ouvertures
+        </span>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Valve café (Photo Macro Nano Banana) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {/* Valve café avec photo Nano Banana */}
           <button
             type="button"
-            onClick={() => onChange({ ...finishes, hasDegassingValve: !finishes.hasDegassingValve })}
-            className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
+            onClick={() => onChangeFinishes(prev => ({ ...prev, hasDegassingValve: !prev.hasDegassingValve }))}
+            className={`p-2 rounded-xl border flex items-center gap-2.5 text-left transition-all cursor-pointer ${
               finishes.hasDegassingValve
-                ? 'border-[#171614] bg-maison-canvas/70 ring-1 ring-[#171614]'
-                : 'border-maison-border bg-white hover:border-maison-borderStrong'
+                ? 'border-cyan-400 bg-cyan-500/15 ring-1 ring-cyan-400/40'
+                : 'border-slate-800 bg-[#080d18] hover:border-slate-700'
             }`}
           >
-            <img
-              src="/images/finishes/valve.jpg"
-              alt="Valve dégazage café"
-              className="w-12 h-12 rounded-lg object-cover border border-maison-border shrink-0"
-            />
-            <div className="flex-1 min-w-0">
+            <div className="w-11 h-11 rounded-lg bg-[#F4F1EA] border border-slate-700/60 overflow-hidden shrink-0">
+              <img src={FINISHES_CATALOG.valve.imageUrl} alt="Valve café" className="w-full h-full object-cover" />
+            </div>
+            <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-maison-ink">Valve Dégazage Arôme</span>
-                <span className={`w-4 h-4 rounded-full flex items-center justify-center border ${finishes.hasDegassingValve ? 'bg-[#171614] border-[#171614] text-white' : 'border-maison-borderStrong'}`}>
-                  {finishes.hasDegassingValve && <Check className="w-2.5 h-2.5" />}
-                </span>
+                <span className="text-[11px] font-bold text-slate-100 truncate">Valve Arôme Café</span>
+                {finishes.hasDegassingValve && <Check className="w-3.5 h-3.5 text-cyan-300" />}
               </div>
-              <p className="text-[11px] text-maison-muted mt-0.5">
-                Valve unidirectionnelle café · +0,028 €/pc (+0,6 g)
-              </p>
+              <span className="text-[10px] font-mono text-cyan-300 tabular-nums">+0.22 ¥/u · +0.6g</span>
             </div>
           </button>
 
-          {/* Fenêtre Transparente Kraft */}
-          <div
-            className={`flex flex-col justify-center p-3 rounded-xl border transition-all ${
-              finishes.hasWindow
-                ? 'border-[#171614] bg-maison-canvas/70 ring-1 ring-[#171614]'
-                : 'border-maison-border bg-white'
+          {/* Découpe Spéciale (Forme Die-Cut 模切) */}
+          <button
+            type="button"
+            onClick={() => onChangeCuttingType(cuttingType === 'die_cut' ? 'double_cut' : 'die_cut')}
+            className={`p-2 rounded-xl border flex items-center gap-2.5 text-left transition-all cursor-pointer ${
+              cuttingType === 'die_cut'
+                ? 'border-rose-400 bg-rose-500/15 ring-1 ring-rose-400/40'
+                : 'border-slate-800 bg-[#080d18] hover:border-slate-700'
             }`}
           >
-            <div className="flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => onChange({ ...finishes, hasWindow: !finishes.hasWindow, windowCount: finishes.windowCount || 1 })}
-                className="flex items-center gap-2.5 text-left flex-1"
-              >
-                <div className="w-10 h-10 rounded-lg bg-[#DFD2BC] border border-[#C6B394] flex items-center justify-center shrink-0">
-                  <div className="w-5 h-5 rounded bg-white/80 border border-[#9E8865]" />
-                </div>
-                <div>
-                  <div className="text-xs font-semibold text-maison-ink">Fenêtre Découpée Kraft</div>
-                  <div className="text-[11px] text-maison-muted">Découpe laissant apparaître le film interne</div>
-                </div>
-              </button>
-              {finishes.hasWindow && (
-                <div className="flex items-center gap-1 bg-white border border-maison-border rounded-lg p-0.5 shrink-0">
-                  {([1, 2] as const).map(cnt => (
-                    <button
-                      key={cnt}
-                      type="button"
-                      onClick={() => onChange({ ...finishes, windowCount: cnt })}
-                      className={`px-2 py-1 text-[11px] font-semibold rounded-md ${
-                        (finishes.windowCount || 1) === cnt
-                          ? 'bg-[#171614] text-white'
-                          : 'text-maison-slate'
-                      }`}
-                    >
-                      {cnt}×
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="w-11 h-11 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center shrink-0">
+              <Scissors className={`w-5 h-5 ${cuttingType === 'die_cut' ? 'text-rose-400' : 'text-slate-400'}`} />
             </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-100 truncate">Forme Spéciale (模切)</span>
+                {cuttingType === 'die_cut' && <Check className="w-3.5 h-3.5 text-rose-400" />}
+              </div>
+              <span className="text-[10px] font-mono text-rose-300">+450 ¥ moule · +0.01¥/u</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Poignée / Suspension + 3 variantes (Standard 10*5.5 + Riz Grand/Petit) */}
+        <div className="p-2.5 rounded-xl bg-[#080d18] border border-slate-800 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <label className="flex items-center gap-2 text-xs font-semibold text-slate-200 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={Boolean(finishes.hasHangingHole)}
+                onChange={() => onChangeFinishes(prev => ({ ...prev, hasHangingHole: !prev.hasHangingHole }))}
+                className="accent-emerald-400"
+              />
+              <span>Poignée / Trou de suspension (手提扣)</span>
+            </label>
+            <span className="text-[10px] font-mono text-emerald-300">
+              {HANDLE_VARIANTS_CATALOG[activeHandle].unitCost}¥/u · {HANDLE_VARIANTS_CATALOG[activeHandle].weightG}g
+            </span>
           </div>
-
-          {/* Gaufrage / Embossage */}
-          <button
-            type="button"
-            onClick={() => onChange({ ...finishes, hasEmbossing: !finishes.hasEmbossing })}
-            className={`flex items-center justify-between gap-3 p-3 rounded-xl border text-left transition-all ${
-              finishes.hasEmbossing
-                ? 'border-[#171614] bg-maison-canvas/70 ring-1 ring-[#171614]'
-                : 'border-maison-border bg-white hover:border-maison-borderStrong'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-maison-canvas border border-maison-border flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-maison-brass" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-maison-ink">Gaufrage / Embossage</div>
-                <div className="text-[11px] text-maison-muted">Texturation mécanique en relief</div>
-              </div>
+          {finishes.hasHangingHole && (
+            <div className="grid grid-cols-3 gap-1.5 pt-1">
+              {(Object.keys(HANDLE_VARIANTS_CATALOG) as HandleVariantKey[]).map(hKey => (
+                <button
+                  key={hKey}
+                  type="button"
+                  onClick={() => onChangeFinishes(prev => ({ ...prev, handleVariant: hKey }))}
+                  className={`py-1 px-2 rounded-lg text-[10px] font-medium border text-center transition ${
+                    activeHandle === hKey
+                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 font-bold'
+                      : 'bg-slate-900 border-slate-800 text-slate-400'
+                  }`}
+                >
+                  {hKey === 'standard' ? 'Standard 10×5.5' : hKey === 'rice_small' ? 'Poignée Riz (7g)' : 'Grande Poignée (8g)'}
+                </button>
+              ))}
             </div>
-            <span className={`w-4 h-4 rounded-full flex items-center justify-center border shrink-0 ${finishes.hasEmbossing ? 'bg-[#171614] border-[#171614] text-white' : 'border-maison-borderStrong'}`}>
-              {finishes.hasEmbossing && <Check className="w-2.5 h-2.5" />}
-            </span>
-          </button>
-
-          {/* Poignée Découpée 10x5.5 */}
-          <button
-            type="button"
-            onClick={() => onChange({ ...finishes, hasHangingHole: !finishes.hasHangingHole })}
-            className={`flex items-center justify-between gap-3 p-3 rounded-xl border text-left transition-all ${
-              finishes.hasHangingHole
-                ? 'border-[#171614] bg-maison-canvas/70 ring-1 ring-[#171614]'
-                : 'border-maison-border bg-white hover:border-maison-borderStrong'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-maison-canvas border border-maison-border flex items-center justify-center">
-                <div className="w-5 h-2.5 rounded-full border-2 border-maison-ink" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-maison-ink">Poignée Découpée (10 × 5,5 cm)</div>
-                <div className="text-[11px] text-maison-muted">Prise en main grands formats (+0,105 ¥/u)</div>
-              </div>
-            </div>
-            <span className={`w-4 h-4 rounded-full flex items-center justify-center border shrink-0 ${finishes.hasHangingHole ? 'bg-[#171614] border-[#171614] text-white' : 'border-maison-borderStrong'}`}>
-              {finishes.hasHangingHole && <Check className="w-2.5 h-2.5" />}
-            </span>
-          </button>
-
-          {/* Bande Adhésive & Plein Encrage */}
-          <button
-            type="button"
-            onClick={() => onChange({ ...finishes, hasAdhesiveStrip: !finishes.hasAdhesiveStrip })}
-            className={`flex items-center justify-between gap-3 p-3 rounded-xl border text-left transition-all ${
-              finishes.hasAdhesiveStrip
-                ? 'border-[#171614] bg-maison-canvas/70 ring-1 ring-[#171614]'
-                : 'border-maison-border bg-white hover:border-maison-borderStrong'
-            }`}
-          >
-            <div>
-              <div className="text-xs font-semibold text-maison-ink">Bande Adhésive (Rabat)</div>
-              <div className="text-[11px] text-maison-muted">Fermeture autocollante 10/18 mm</div>
-            </div>
-            <span className={`w-4 h-4 rounded-full flex items-center justify-center border shrink-0 ${finishes.hasAdhesiveStrip ? 'bg-[#171614] border-[#171614] text-white' : 'border-maison-borderStrong'}`}>
-              {finishes.hasAdhesiveStrip && <Check className="w-2.5 h-2.5" />}
-            </span>
-          </button>
-
-          {technology === 'gravure' && (
-            <button
-              type="button"
-              onClick={() => onChange({ ...finishes, fullInkCoverage: !finishes.fullInkCoverage })}
-              className={`flex items-center justify-between gap-3 p-3 rounded-xl border text-left transition-all ${
-                finishes.fullInkCoverage
-                  ? 'border-maison-brass bg-maison-brassLight/40 ring-1 ring-maison-brass'
-                  : 'border-maison-border bg-white hover:border-maison-borderStrong'
-              }`}
-            >
-              <div>
-                <div className="text-xs font-semibold text-maison-ink">Plein Encrage 100 % Recto/Verso</div>
-                <div className="text-[11px] text-maison-muted">Majoration encre forte densité (+20 % encre)</div>
-              </div>
-              <span className={`w-4 h-4 rounded-full flex items-center justify-center border shrink-0 ${finishes.fullInkCoverage ? 'bg-maison-brass border-maison-brass text-white' : 'border-maison-borderStrong'}`}>
-                {finishes.fullInkCoverage && <Check className="w-2.5 h-2.5" />}
-              </span>
-            </button>
           )}
         </div>
 
-        {/* Sélecteur Complet Becs Verseurs (8 diamètres catalogue usine) */}
-        <div className="mt-4 bg-maison-canvas/60 border border-maison-border rounded-xl p-3.5">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-semibold text-maison-ink">Bec Verseur & Bouchon Vissé (Spout)</span>
-            {activeSpout !== 'none' && (
-              <span className="text-[11px] font-mono text-maison-brass font-medium tabular-nums">
-                +{(FINISHES_CATALOG.spouts[activeSpout].unitCost * CNY_TO_EUR_RATE).toFixed(3)} €/u · {FINISHES_CATALOG.spouts[activeSpout].weightG} g
-              </span>
-            )}
+        {/* Badges complémentaires : Fenêtre Kraft (1 ou 2) + Gaufrage + Bande Adhésive (Normal / Destructif) */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <button
+            type="button"
+            onClick={() => onChangeFinishes(prev => ({ ...prev, hasWindow: !prev.hasWindow }))}
+            className={`px-3 py-2 rounded-xl border text-left transition cursor-pointer ${
+              finishes.hasWindow
+                ? 'border-amber-400 bg-amber-500/15 text-amber-200'
+                : 'border-slate-800 bg-[#080d18] text-slate-300 hover:border-slate-700'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-[11px]">Fenêtre Kraft (`开窗`)</span>
+              {finishes.hasWindow && (
+                <span
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onChangeFinishes(prev => ({ ...prev, windowCount: prev.windowCount === 2 ? 1 : 2 }));
+                  }}
+                  className="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 font-mono text-[9px] font-bold"
+                >
+                  {finishes.windowCount === 2 ? '2 fen.' : '1 fen.'}
+                </span>
+              )}
+            </div>
+            <span className="text-[9px] text-slate-400 block mt-0.5">Découpe + film transparent</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onChangeFinishes(prev => ({ ...prev, hasEmbossing: !prev.hasEmbossing }))}
+            className={`px-3 py-2 rounded-xl border text-left transition cursor-pointer ${
+              finishes.hasEmbossing
+                ? 'border-purple-400 bg-purple-500/15 text-purple-200'
+                : 'border-slate-800 bg-[#080d18] text-slate-300 hover:border-slate-700'
+            }`}
+          >
+            <div className="font-semibold text-[11px]">Gaufrage Relief (`压纹`)</div>
+            <span className="text-[9px] text-slate-400 block mt-0.5">Grain & texture embossée</span>
+          </button>
+        </div>
+
+        {/* Bande adhésive (Aucune / Standard 18mm / Destructive inviolable) */}
+        <div className="p-2.5 rounded-xl bg-[#080d18] border border-slate-800 space-y-1.5">
+          <div className="flex items-center justify-between text-[10px]">
+            <span className="font-semibold text-slate-300 uppercase">Bande Adhésive (`自粘`) :</span>
+            <span className="font-mono text-cyan-300">{ADHESIVE_VARIANTS_CATALOG[activeAdhesive].nameZh}</span>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {SPOUT_SIZES.map((sp) => (
+          <div className="grid grid-cols-3 gap-1.5">
+            {(Object.keys(ADHESIVE_VARIANTS_CATALOG) as AdhesiveVariantKey[]).map(aKey => (
               <button
-                key={sp.key}
+                key={aKey}
                 type="button"
-                onClick={() => onChange({ ...finishes, spoutSize: sp.key })}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  activeSpout === sp.key
-                    ? 'bg-[#171614] text-white shadow-sm'
-                    : 'bg-white border border-maison-border text-maison-slate hover:border-maison-borderStrong hover:text-maison-ink'
+                onClick={() => onChangeFinishes(prev => ({
+                  ...prev,
+                  adhesiveVariant: aKey,
+                  hasAdhesiveStrip: aKey !== 'none'
+                }))}
+                className={`py-1.5 px-2 rounded-lg text-[10px] font-medium border transition ${
+                  activeAdhesive === aKey
+                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 font-bold'
+                    : 'bg-slate-900 border-slate-800 text-slate-400'
                 }`}
               >
-                {sp.label}
+                {aKey === 'none' ? 'Aucune' : aKey === 'standard' ? 'Refermable 18mm' : 'Inviolable Blanche'}
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* COUVERTURE ENCRE (5 PALIERS) & COULEURS PANTONE SPÉCIALES (OR / ARGENT / VIOLET / MAGENTA) */}
+      <div className="pt-3 border-t border-slate-800/80 space-y-3">
+        <div>
+          <div className="flex items-center justify-between text-[10px] mb-1.5">
+            <span className="font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <Palette className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Couverture d'encre (`满版印刷` gxcb_gravure)</span>
+            </span>
+            <span className="font-mono text-indigo-300">×{INK_COVERAGE_CATALOG.find(c => c.key === activeCoverage)?.rateMultiplier.toFixed(2)}</span>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-1">
+            {INK_COVERAGE_CATALOG.map(cov => (
+              <button
+                key={cov.key}
+                type="button"
+                onClick={() => onChangeFinishes(prev => ({
+                  ...prev,
+                  inkCoverageLevel: cov.key,
+                  fullInkCoverage: cov.key === 'single_full' || cov.key === 'double_full'
+                }))}
+                className={`py-1.5 px-1.5 rounded-lg text-[10px] font-medium border text-center transition ${
+                  activeCoverage === cov.key
+                    ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 font-bold'
+                    : 'bg-[#080d18] border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <span className="block truncate">{cov.labelZh}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tons Directs Pantone Spéciaux (Or / Argent / Violet / Rose) */}
+        {technology === 'gravure' && (
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block mb-1.5">
+              Encres Spéciales Pantone (`特殊专色`)
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+              {PANTONE_COLORS_CATALOG.map(p => {
+                const on = activePantones.includes(p.key);
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => togglePantone(p.key)}
+                    className={`py-1.5 px-2 rounded-lg border flex items-center gap-1.5 text-[10px] transition ${
+                      on
+                        ? 'border-amber-400 bg-amber-500/15 text-amber-100 font-bold'
+                        : 'border-slate-800 bg-[#080d18] text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/20" style={{ backgroundColor: p.hex }} />
+                    <span className="truncate">{p.labelZh}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 8 DIAMÈTRES DE BECS VERSEURS (SPOUT POUCH) */}
+      <div className="pt-3 border-t border-slate-800/80 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Bec Verseur & Goulot Doypack (5 → 33 mm)</span>
+          </span>
+          <span className="text-[10px] font-mono text-amber-300 tabular-nums">
+            {activeSpout === 'none' ? 'Sans bec' : `${FINISHES_CATALOG.spouts[activeSpout].name} (${FINISHES_CATALOG.spouts[activeSpout].weightG}g)`}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
+          {SPOUT_OPTIONS.map((sp) => {
+            const isSelected = activeSpout === sp.key;
+            return (
+              <button
+                key={sp.key}
+                type="button"
+                onClick={() => onChangeFinishes(prev => ({ ...prev, spoutSize: sp.key }))}
+                className={`px-2 py-1.5 rounded-lg border text-center transition cursor-pointer ${
+                  isSelected
+                    ? 'border-cyan-400 bg-cyan-500/20 text-cyan-100 font-bold shadow-glow-cyan'
+                    : 'border-slate-800 bg-[#080d18] text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <div className="text-[11px] leading-tight">{sp.label}</div>
+                <div className="text-[9px] font-mono text-amber-300/90 tabular-nums">{sp.meta}</div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

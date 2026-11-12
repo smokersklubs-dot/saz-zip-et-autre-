@@ -32,129 +32,130 @@ export const ProposalPrintModal: React.FC<ProposalPrintModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#171614]/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white border border-maison-border rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden my-auto print-only-sheet">
-        {/* Barre d'actions modal (cachée à l'impression) */}
-        <div className="no-print px-5 py-3.5 bg-maison-canvas border-b border-maison-border flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      <div className="bg-white text-slate-900 border border-slate-200 rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden my-auto print-only-sheet">
+        {/* Barre d'actions modal Obsidian (cachée à l'impression) */}
+        <div className="no-print px-5 py-3.5 bg-[#0c1322] border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <input
               type="text"
               value={clientName}
               onChange={e => setClientName(e.target.value)}
               placeholder="Nom du client"
-              className="px-3 py-1.5 rounded-lg border border-maison-border bg-white text-xs font-medium text-maison-ink"
+              className="px-3 py-1.5 rounded-lg border border-slate-700 bg-[#080d18] text-xs font-medium text-slate-100 focus:outline-none focus:border-cyan-400"
             />
             <input
               type="text"
               value={projectRef}
               onChange={e => setProjectRef(e.target.value)}
               placeholder="Référence devis"
-              className="px-3 py-1.5 rounded-lg border border-maison-border bg-white text-xs font-mono text-maison-ink w-32"
+              className="px-3 py-1.5 rounded-lg border border-slate-700 bg-[#080d18] text-xs font-mono text-cyan-300 w-36 focus:outline-none focus:border-cyan-400"
             />
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleCopyText}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-maison-border bg-white text-xs font-semibold text-maison-ink hover:bg-maison-stone"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-[#080d18] text-xs font-semibold text-slate-200 hover:bg-slate-800 cursor-pointer"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-maison-emerald" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-cyan-400" />}
               {copied ? 'Copié' : 'Copier texte'}
             </button>
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#171614] text-white text-xs font-semibold hover:bg-maison-brass transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-400 transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" /> Imprimer / PDF
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-maison-slate hover:text-maison-ink hover:bg-maison-stone"
+              aria-label="Fermer"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Feuille Éditoriale Client */}
-        <div className="p-7 sm:p-10 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-maison-border">
+        {/* Feuille Éditoriale Client Blanche (optimisée impression A4) */}
+        <div className="p-6 sm:p-10 space-y-6 bg-white text-slate-900">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-slate-200">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-maison-brass font-semibold">
-                Maison Mylar · Proposition Packaging
+              <p className="text-[11px] uppercase tracking-[0.2em] text-amber-700 font-bold">
+                Mylar Pro · Proposition Packaging Sur-Mesure
               </p>
-              <h2 className="font-serif text-3xl font-semibold text-maison-ink mt-1">
+              <h2 className="font-serif text-3xl font-semibold text-slate-900 mt-1">
                 Devis n° {projectRef}
               </h2>
-              <p className="text-sm text-maison-slate mt-1">
-                À l'attention de <strong className="text-maison-ink">{clientName}</strong>
+              <p className="text-sm text-slate-600 mt-1">
+                À l&apos;attention de <strong className="text-slate-900">{clientName}</strong>
               </p>
             </div>
-            <div className="text-left sm:text-right text-xs text-maison-muted font-mono">
+            <div className="text-left sm:text-right text-xs text-slate-500 font-mono">
               <div>Émis le {new Date().toLocaleDateString('fr-FR')}</div>
-              <div>Validité de l'offre : 15 jours</div>
+              <div>Validité de l&apos;offre : 15 jours</div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
-            <div className="sm:col-span-4 bg-[#F4F1EA] rounded-xl p-4 border border-maison-border flex items-center justify-center aspect-square">
+            <div className="sm:col-span-4 bg-[#F4F1EA] rounded-xl p-4 border border-slate-200 flex items-center justify-center aspect-square">
               <img src={imgUrl} alt={bagDef.nameFr} className="w-full h-full object-contain mix-blend-multiply" />
             </div>
-            <div className="sm:col-span-8 space-y-3 text-sm">
-              <div className="flex justify-between py-1.5 border-b border-maison-border">
-                <span className="text-maison-muted">Format</span>
-                <span className="font-semibold text-maison-ink">{bagDef.nameFr}</span>
+            <div className="sm:col-span-8 space-y-2.5 text-sm">
+              <div className="flex justify-between py-1.5 border-b border-slate-200">
+                <span className="text-slate-500">Format</span>
+                <span className="font-semibold text-slate-900">{bagDef.nameFr}</span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-maison-border">
-                <span className="text-maison-muted">Dimensions</span>
-                <span className="font-mono font-semibold text-maison-ink">
+              <div className="flex justify-between py-1.5 border-b border-slate-200">
+                <span className="text-slate-500">Dimensions</span>
+                <span className="font-mono font-semibold text-slate-900">
                   L {dim.widthCm} × H {dim.heightCm} {bagDef.hasBottomGusset ? `+ Fond ${dim.bottomCm}` : bagDef.hasSideGusset ? `× Soufflet ${dim.sideGussetCm ?? dim.bottomCm}` : ''} cm
                 </span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-maison-border">
-                <span className="text-maison-muted">Impression</span>
-                <span className="font-semibold text-maison-ink">
+              <div className="flex justify-between py-1.5 border-b border-slate-200">
+                <span className="text-slate-500">Impression</span>
+                <span className="font-semibold text-slate-900">
                   {dim.technology === 'gravure' ? `Héliogravure (${quote.cylinderCount} couleurs)` : 'Numérique Haute Définition'}
                 </span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-maison-border">
-                <span className="text-maison-muted">Complexe Barrière</span>
-                <span className="font-medium text-maison-ink text-right">{quote.imposition.layersSummaryFr}</span>
+              <div className="flex justify-between py-1.5 border-b border-slate-200 gap-4">
+                <span className="text-slate-500 shrink-0">Complexe Barrière</span>
+                <span className="font-medium text-slate-900 text-right">{quote.imposition.layersSummaryFr}</span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-maison-border">
-                <span className="text-maison-muted">Volume & Variantes</span>
-                <span className="font-mono font-semibold text-maison-ink">
+              <div className="flex justify-between py-1.5 border-b border-slate-200">
+                <span className="text-slate-500">Volume & Variantes</span>
+                <span className="font-mono font-semibold text-slate-900">
                   {quote.resolvedQuantity.toLocaleString('fr-FR')} pcs ({dim.skuCount || 1} visuel{(dim.skuCount || 1) > 1 ? 's' : ''})
                 </span>
               </div>
               <div className="flex justify-between py-1.5">
-                <span className="text-maison-muted">Délai de fabrication</span>
-                <span className="font-semibold text-maison-ink">
+                <span className="text-slate-500">Délai de fabrication</span>
+                <span className="font-semibold text-slate-900">
                   {quote.imposition.leadTimeDays} jours ouvrés (expédition est. {quote.imposition.estimatedShipDate})
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-maison-canvas border border-maison-border rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <span className="text-xs text-maison-muted block">Prix Unitaire</span>
-              <span className="font-mono text-2xl font-semibold text-maison-ink tabular-nums">
-                {quote.resalePriceUnitEur.toFixed(3)} € <span className="text-sm font-normal text-maison-slate">/ sac HT</span>
+              <span className="text-xs text-slate-500 block">Prix Unitaire HT</span>
+              <span className="font-mono text-2xl font-bold text-slate-900 tabular-nums">
+                {quote.resalePriceUnitEur.toFixed(3)} € <span className="text-sm font-normal text-slate-500">/ sac</span>
               </span>
             </div>
             <div className="sm:text-right">
-              <span className="text-xs text-maison-muted block">Montant Total Commande</span>
-              <span className="font-serif text-3xl font-semibold text-maison-ink tabular-nums">
+              <span className="text-xs text-slate-500 block">Montant Total Commande HT</span>
+              <span className="font-serif text-3xl font-bold text-emerald-700 tabular-nums">
                 {quote.resalePriceTotalEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
             </div>
           </div>
 
-          <div className="text-[11px] text-maison-muted leading-relaxed pt-2 border-t border-maison-border">
-            Poids estimé de la production : ~{quote.weightTotalKg} kg ({quote.weightUnitGrams.toFixed(2)} g/unité). Tolérance industrielle de livraison ±10 %. Les visuels fournis doivent être préparés au format vectoriel (AI / PDF CMJN avec 3 mm de fond perdu).
+          <div className="text-[11px] text-slate-500 leading-relaxed pt-2 border-t border-slate-200">
+            Poids estimé de la production : ~{quote.weightTotalKg} kg ({quote.weightUnitGrams.toFixed(2)} g/unité · {quote.totalBasisGsm} g/m²). Tolérance industrielle de livraison ±10 %. Les visuels fournis doivent être préparés au format vectoriel (AI / PDF CMJN avec 3 mm de fond perdu).
           </div>
         </div>
       </div>
