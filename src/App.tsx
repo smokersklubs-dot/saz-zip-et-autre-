@@ -60,7 +60,7 @@ export function App() {
   const [mobileExtraView, setMobileExtraView] = useState<'tiers' | 'tools'>('tiers');
   const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CNY'>('EUR');
   const [proposalOpen, setProposalOpen] = useState(false);
-  const [copiedBanner, setCopiedBanner] = useState<'fr' | 'zh' | null>(null);
+  const [copiedBanner, setCopiedBanner] = useState<'fr' | 'zh' | 'ai' | null>(null);
 
   // État principal du configurateur
   const [technology, setTechnology] = useState<PrintTechnology>('digital');
@@ -237,8 +237,13 @@ export function App() {
   const pctMisc = Math.round(((quote.shippingCostCny + quote.rushFeeCny + quote.taxCostCny + quote.extraFeeCny) / resaleTotalSafe) * 100);
   const pctProfit = Math.max(0, 100 - (pctMaterial + pctPrint + pctConv + pctMisc));
 
-  const copyQuoteText = (lang: 'fr' | 'zh') => {
-    const content = lang === 'fr' ? quote.imposition.quoteSpecFr : quote.imposition.quoteSpecZh;
+  const copyQuoteText = (lang: 'fr' | 'zh' | 'ai') => {
+    const content =
+      lang === 'ai'
+        ? JSON.stringify({ input: dimPayload, breakdown: quote }, null, 2)
+        : lang === 'fr'
+          ? quote.imposition.quoteSpecFr
+          : quote.imposition.quoteSpecZh;
     navigator.clipboard?.writeText(content);
     setCopiedBanner(lang);
     setTimeout(() => setCopiedBanner(null), 2200);
