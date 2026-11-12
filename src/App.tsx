@@ -402,7 +402,7 @@ export function App() {
               </div>
             ) : (
               <div className="flex flex-wrap gap-1.5">
-                {(technology === 'digital' ? [500, 1000, 2500, 5000, 10000] : [10000, 20000, 50000, 100000]).map((q) => (
+                {(technology === 'digital' ? [100, 250, 500, 1000, 2500, 5000, 10000] : [10000, 20000, 50000, 100000]).map((q) => (
                   <button
                     key={q}
                     type="button"
@@ -460,9 +460,9 @@ export function App() {
               />
               <input
                 type="range"
-                min={technology === 'digital' ? 250 : 5000}
+                min={technology === 'digital' ? 100 : 5000}
                 max={technology === 'digital' ? 15000 : 120000}
-                step={technology === 'digital' ? 250 : 1000}
+                step={technology === 'digital' ? 50 : 1000}
                 value={quantity}
                 onChange={e => setQuantity(Number(e.target.value))}
                 className="atelier-slider flex-1"

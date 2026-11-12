@@ -137,7 +137,7 @@ export const StudioShowcase: React.FC<StudioShowcaseProps> = ({
               >
                 <span className="block text-[11px] leading-tight">Numérique HD</span>
                 <span className={`block text-[9px] font-mono ${!isGravure ? 'text-slate-900' : 'text-slate-500'}`}>
-                  250–10k · 0 cliché
+                  100–10k · 0 cliché
                 </span>
               </button>
               <button

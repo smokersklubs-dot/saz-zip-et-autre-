@@ -30,7 +30,7 @@ export const ComparisonTiersTab: React.FC<ComparisonTiersTabProps> = ({
   onApplyQuantityAndTech
 }) => {
   const digitalTiers = useMemo(
-    () => calculateTierMatrix({ ...baseDim, technology: 'digital' }, [250, 500, 1000, 2500, 5000, 10000]),
+    () => calculateTierMatrix({ ...baseDim, technology: 'digital' }, [100, 250, 500, 1000, 2500, 5000, 10000]),
     [baseDim]
   );
 
