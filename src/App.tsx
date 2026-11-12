@@ -4,26 +4,21 @@ import {
   Sparkles,
   Sliders,
   DollarSign,
-  TrendingUp,
   PieChart as PieIcon,
-  Package,
-  Weight,
   Lock,
   EyeOff,
-  Flame,
-  CheckCircle2,
   Box,
-  Percent,
   Calculator,
   BarChart3,
-  Smartphone,
   Info,
-  Check
+  Check,
+  Scale,
+  Ruler,
+  Layers,
+  ChevronRight,
+  Settings2
 } from 'lucide-react';
 import {
-  PieChart,
-  Pie,
-  Cell,
   ResponsiveContainer,
   Tooltip,
   BarChart,
@@ -38,11 +33,15 @@ import {
   calculateTierMatrix,
   MATERIAL_PRESETS,
   BAG_TYPES_CATALOG,
-  FINISHES_CATALOG,
   BagDimensions,
   BagTypeKey,
   PrintTechnology
 } from './pricingEngine';
+import {
+  PRINT_LAYERS,
+  BARRIER_LAYERS,
+  SEAL_LAYERS
+} from './materialsCatalog';
 import {
   StandUpBagIcon,
   ThreeSideBagIcon,
@@ -68,6 +67,27 @@ export default function App() {
   const [gravureTab, setGravureTab] = useState<'composite' | 'single' | 'tools'>('composite');
   const [mobileTab, setMobileTab] = useState<'config' | 'finishes' | 'pricing' | 'charts'>('config');
 
+  // Identifiant unique du modèle actif pour un clic 100% fiable et immédiat
+  const [selectedModelId, setSelectedModelId] = useState<string>('dig_stand_up');
+
+  // Mode structure sur-mesure (couche par couche)
+  const [isCustomStructure, setIsCustomStructure] = useState<boolean>(false);
+  const [customLayers, setCustomLayers] = useState({
+    printLayerId: PRINT_LAYERS[0].id,
+    barrierLayerId: BARRIER_LAYERS[0].id as string | null,
+    sealLayerId: SEAL_LAYERS[0].id
+  });
+
+  // États indépendants des finitions pour pouvoir les combiner sans conflit
+  const [finishesState, setFinishesState] = useState({
+    matteVarnish: false,
+    spotUv: false,
+    hotStamping: false,
+    degassingValve: false,
+    hangingHole: false,
+    spout: 'none' as 'none' | 'spout_10mm' | 'spout_16mm'
+  });
+
   const [dimensions, setDimensions] = useState<BagDimensions>({
     technology: 'digital',
     bagType: 'stand_up',
@@ -85,6 +105,7 @@ export default function App() {
     resaleFixedUnitPriceEur: 0.35,
     finishes: {
       uvEnhancement: 'none',
+      hasMatteVarnish: false,
       spoutSize: 'none',
       hasDegassingValve: false,
       hasHangingHole: false
@@ -94,10 +115,70 @@ export default function App() {
   const [activeCurrency, setActiveCurrency] = useState<'EUR' | 'CNY'>('EUR');
   const [showAdminDetails, setShowAdminDetails] = useState(true);
 
+  // Regroupement par catégories pour le sélecteur de structure
+  const structureCategories = useMemo(() => {
+    const cats: Record<string, { key: string; name: string; badge?: string }[]> = {};
+    Object.entries(MATERIAL_PRESETS).forEach(([key, preset]) => {
+      const cat = preset.category || 'Autres Complexes';
+      if (!cats[cat]) cats[cat] = [];
+      cats[cat].push({ key, name: preset.name, badge: preset.badge });
+    });
+    return cats;
+  }, []);
+
+  // Résolution propre de la finition UV / Dorure combinée
+  const computedUvEnhancement = useMemo((): 'none' | 'matte_varnish' | 'spot_uv' | 'thick_uv' | 'hot_stamping' | 'uv_and_hot_stamping' => {
+    if (finishesState.spotUv && finishesState.hotStamping) return 'uv_and_hot_stamping';
+    if (finishesState.spotUv) return 'spot_uv';
+    if (finishesState.hotStamping) return 'hot_stamping';
+    if (finishesState.matteVarnish) return 'matte_varnish';
+    return 'none';
+  }, [finishesState.spotUv, finishesState.hotStamping, finishesState.matteVarnish]);
+
+  // Synchronisation des dimensions avec les couches et finitions
+  const activeDimensions = useMemo(() => {
+    return {
+      ...dimensions,
+      technology: printTechnology,
+      customLayers: isCustomStructure ? customLayers : undefined,
+      finishes: {
+        uvEnhancement: computedUvEnhancement,
+        hasMatteVarnish: finishesState.matteVarnish,
+        spoutSize: finishesState.spout,
+        hasDegassingValve: finishesState.degassingValve,
+        hasHangingHole: finishesState.hangingHole
+      }
+    };
+  }, [dimensions, printTechnology, isCustomStructure, customLayers, computedUvEnhancement, finishesState]);
+
   const currentBagDef = useMemo(() => {
     return BAG_TYPES_CATALOG.find(b => b.key === dimensions.bagType) || BAG_TYPES_CATALOG[0];
   }, [dimensions.bagType]);
 
+  // Gestionnaire de clic unifié et infaillible pour la sélection d'un sac
+  const handleBagSelection = (config: {
+    id: string;
+    tech: PrintTechnology;
+    bagType: BagTypeKey;
+    hasZip: boolean;
+    materialPreset?: string;
+  }) => {
+    setSelectedModelId(config.id);
+    setPrintTechnology(config.tech);
+    const bagDef = BAG_TYPES_CATALOG.find(b => b.key === config.bagType) || BAG_TYPES_CATALOG[0];
+
+    setDimensions(prev => ({
+      ...prev,
+      technology: config.tech,
+      bagType: config.bagType,
+      hasZip: config.hasZip,
+      quantity: config.tech === 'gravure' ? Math.max(10000, prev.quantity) : (prev.quantity > 10000 ? 1000 : prev.quantity),
+      materialPreset: config.materialPreset || prev.materialPreset,
+      zipperInstId: bagDef.zipperOptions.find(z => config.hasZip ? !z.label.includes('Sans') : z.label.includes('Sans'))?.instId || bagDef.zipperOptions[0].instId
+    }));
+  };
+
+  // Bascule rapide entre Numérique et Gravure
   const handleTechnologyChange = (tech: PrintTechnology) => {
     setPrintTechnology(tech);
     setDimensions(prev => ({
@@ -105,31 +186,22 @@ export default function App() {
       technology: tech,
       quantity: tech === 'gravure' ? Math.max(10000, prev.quantity) : (prev.quantity > 10000 ? 1000 : prev.quantity)
     }));
-  };
-
-  const handleBagSelection = (typeKey: BagTypeKey, tech: PrintTechnology, withZip: boolean = false) => {
-    setPrintTechnology(tech);
-    const bagDef = BAG_TYPES_CATALOG.find(b => b.key === typeKey);
-    setDimensions(prev => ({
-      ...prev,
-      technology: tech,
-      bagType: typeKey,
-      hasZip: withZip ? true : prev.hasZip,
-      quantity: tech === 'gravure' ? Math.max(10000, prev.quantity) : (prev.quantity > 10000 ? 1000 : prev.quantity),
-      zipperInstId: bagDef?.zipperOptions[0].instId
-    }));
+    if (tech === 'digital' && selectedModelId.startsWith('grv_')) {
+      setSelectedModelId('dig_' + selectedModelId.replace('grv_', ''));
+    } else if (tech === 'gravure' && selectedModelId.startsWith('dig_')) {
+      setSelectedModelId('grv_' + selectedModelId.replace('dig_', ''));
+    }
   };
 
   const quote = useMemo(() => {
-    return calculateMylarQuote({ ...dimensions, technology: printTechnology });
-  }, [dimensions, printTechnology]);
+    return calculateMylarQuote(activeDimensions);
+  }, [activeDimensions]);
 
   const tierData = useMemo(() => {
-    const base = { ...dimensions, technology: printTechnology };
     const tiers = printTechnology === 'gravure'
       ? [5000, 10000, 20000, 50000, 100000]
       : [250, 500, 1000, 2500, 5000, 10000];
-    const results = calculateTierMatrix(base, tiers);
+    const results = calculateTierMatrix(activeDimensions, tiers);
     return results.map((r, i) => ({
       qty: tiers[i],
       label: tiers[i] >= 1000 ? `${tiers[i] / 1000}k` : `${tiers[i]}`,
@@ -138,31 +210,24 @@ export default function App() {
       grossProfitEur: r.grossProfitUnitEur,
       marginPct: r.grossMarginPercent
     }));
-  }, [dimensions, printTechnology]);
-
-  const costBreakdownData = useMemo(() => {
-    return [
-      { name: 'Matières Films (cl)', value: quote.materialCostCny, color: '#06b6d4' },
-      { name: 'Impression (ys)', value: quote.printCostCny, color: '#3b82f6' },
-      { name: 'Lamination (fh)', value: quote.laminationCostCny, color: '#8b5cf6' },
-      { name: 'Façonnage & Zip (zd)', value: quote.bagMakingCostCny, color: '#ec4899' },
-      { name: 'Accessoires (qt)', value: quote.accessoriesCostCny, color: '#f59e0b' },
-      ...(quote.cylindersCostCny > 0 ? [{ name: 'Cylindres Gravure', value: quote.cylindersCostCny, color: '#ef4444' }] : [])
-    ].filter(item => item.value > 0);
-  }, [quote]);
+  }, [activeDimensions, printTechnology]);
 
   const handleDimChange = (field: keyof BagDimensions, value: any) => {
     setDimensions(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFinishChange = (field: keyof NonNullable<BagDimensions['finishes']>, value: any) => {
-    setDimensions(prev => ({
-      ...prev,
-      finishes: {
-        ...prev.finishes,
-        [field]: value
-      }
-    }));
+  const toggleFinish = (key: keyof typeof finishesState) => {
+    if (key === 'spout') {
+      setFinishesState(prev => ({
+        ...prev,
+        spout: prev.spout === 'none' ? 'spout_10mm' : 'none'
+      }));
+    } else {
+      setFinishesState(prev => ({
+        ...prev,
+        [key]: !prev[key]
+      }));
+    }
   };
 
   return (
@@ -179,7 +244,7 @@ export default function App() {
                 ANTIGRAVITY MYLAR
               </span>
               <span className="text-[9px] uppercase font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold">
-                Pro
+                Live
               </span>
             </div>
             <p className="text-[10px] text-slate-400 hidden sm:block">Chiffrage usine direct & sélection visuelle de sacs</p>
@@ -190,22 +255,25 @@ export default function App() {
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs font-semibold">
             <button
+              type="button"
               onClick={() => setActiveCurrency('EUR')}
-              className={`px-2.5 py-1 rounded-md transition ${activeCurrency === 'EUR' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'}`}
+              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${activeCurrency === 'EUR' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'}`}
             >
               €
             </button>
             <button
+              type="button"
               onClick={() => setActiveCurrency('CNY')}
-              className={`px-2.5 py-1 rounded-md transition ${activeCurrency === 'CNY' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'}`}
+              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${activeCurrency === 'CNY' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'}`}
             >
               ¥
             </button>
           </div>
 
           <button
+            type="button"
             onClick={() => setShowAdminDetails(!showAdminDetails)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-900/80 text-xs text-slate-300 hover:border-slate-700"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-900/80 text-xs text-slate-300 hover:border-slate-700 cursor-pointer"
           >
             {showAdminDetails ? <EyeOff className="w-3.5 h-3.5 text-rose-400" /> : <Lock className="w-3.5 h-3.5 text-amber-400" />}
             <span className="hidden sm:inline">{showAdminDetails ? 'Masquer Usine' : 'Voir Usine'}</span>
@@ -222,12 +290,17 @@ export default function App() {
             <div className={`lg:col-span-5 rounded-2xl border transition-all p-3.5 sm:p-4 ${
               printTechnology === 'digital'
                 ? 'bg-gradient-to-br from-[#0c1a30] to-[#08101e] border-cyan-500/60 shadow-[0_0_20px_rgba(6,182,212,0.15)] ring-1 ring-cyan-400/50'
-                : 'bg-[#0a0f1d] border-slate-800 hover:border-slate-700 opacity-80'
+                : 'bg-[#0a0f1d] border-slate-800/80 hover:border-slate-700 opacity-75'
             }`}>
-              <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80">
-                <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => handleTechnologyChange('digital')}>
+              <div
+                className="flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80 cursor-pointer"
+                onClick={() => handleTechnologyChange('digital')}
+              >
+                <div className="flex items-center gap-1.5">
                   <h3 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
-                    <span>Outil de tarification numérique</span>
+                    <span className={printTechnology === 'digital' ? 'text-cyan-300' : 'text-slate-300'}>
+                      Outil de tarification numérique
+                    </span>
                     <Info className="w-3.5 h-3.5 text-slate-400" />
                   </h3>
                 </div>
@@ -240,10 +313,11 @@ export default function App() {
               <div className="grid grid-cols-2 gap-2 text-xs">
                 {/* 1. Sac 3 soudures */}
                 <button
-                  onClick={() => handleBagSelection('three_side', 'digital', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'digital' && dimensions.bagType === 'three_side' && !dimensions.hasZip
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
+                  type="button"
+                  onClick={() => handleBagSelection({ id: 'dig_three_side', tech: 'digital', bagType: 'three_side', hasZip: false })}
+                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                    selectedModelId === 'dig_three_side'
+                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                       : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                   }`}
                 >
@@ -255,10 +329,11 @@ export default function App() {
 
                 {/* 2. Sac debout */}
                 <button
-                  onClick={() => handleBagSelection('stand_up', 'digital', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'digital' && dimensions.bagType === 'stand_up' && !dimensions.hasZip
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
+                  type="button"
+                  onClick={() => handleBagSelection({ id: 'dig_stand_up', tech: 'digital', bagType: 'stand_up', hasZip: false })}
+                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                    selectedModelId === 'dig_stand_up'
+                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                       : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                   }`}
                 >
@@ -270,10 +345,11 @@ export default function App() {
 
                 {/* 3. Sachet à fermeture éclair */}
                 <button
-                  onClick={() => handleBagSelection('stand_up', 'digital', true)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'digital' && dimensions.bagType === 'stand_up' && dimensions.hasZip
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
+                  type="button"
+                  onClick={() => handleBagSelection({ id: 'dig_zipper', tech: 'digital', bagType: 'stand_up', hasZip: true })}
+                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                    selectedModelId === 'dig_zipper'
+                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                       : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                   }`}
                 >
@@ -285,10 +361,11 @@ export default function App() {
 
                 {/* 4. Sac accordéon */}
                 <button
-                  onClick={() => handleBagSelection('gusset', 'digital', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'digital' && dimensions.bagType === 'gusset'
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
+                  type="button"
+                  onClick={() => handleBagSelection({ id: 'dig_gusset', tech: 'digital', bagType: 'gusset', hasZip: false })}
+                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                    selectedModelId === 'dig_gusset'
+                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                       : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                   }`}
                 >
@@ -300,10 +377,11 @@ export default function App() {
 
                 {/* 5. Sac octogonal */}
                 <button
-                  onClick={() => handleBagSelection('flat_bottom', 'digital', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'digital' && dimensions.bagType === 'flat_bottom'
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
+                  type="button"
+                  onClick={() => handleBagSelection({ id: 'dig_flat_bottom', tech: 'digital', bagType: 'flat_bottom', hasZip: false })}
+                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                    selectedModelId === 'dig_flat_bottom'
+                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                       : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                   }`}
                 >
@@ -315,10 +393,11 @@ export default function App() {
 
                 {/* 6. Sac scellé sur quatre côtés */}
                 <button
-                  onClick={() => handleBagSelection('four_side', 'digital', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'digital' && dimensions.bagType === 'four_side'
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
+                  type="button"
+                  onClick={() => handleBagSelection({ id: 'dig_four_side', tech: 'digital', bagType: 'four_side', hasZip: false })}
+                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                    selectedModelId === 'dig_four_side'
+                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                       : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                   }`}
                 >
@@ -330,10 +409,11 @@ export default function App() {
 
                 {/* 7. Sac scellé sur le dos / côtés */}
                 <button
-                  onClick={() => handleBagSelection('center_seal', 'digital', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'digital' && dimensions.bagType === 'center_seal'
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
+                  type="button"
+                  onClick={() => handleBagSelection({ id: 'dig_center_seal', tech: 'digital', bagType: 'center_seal', hasZip: false })}
+                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                    selectedModelId === 'dig_center_seal'
+                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                       : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                   }`}
                 >
@@ -345,10 +425,11 @@ export default function App() {
 
                 {/* 8. Film en rouleau */}
                 <button
-                  onClick={() => handleBagSelection('roll_film', 'digital', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'digital' && dimensions.bagType === 'roll_film'
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-sm'
+                  type="button"
+                  onClick={() => handleBagSelection({ id: 'dig_roll_film', tech: 'digital', bagType: 'roll_film', hasZip: false })}
+                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                    selectedModelId === 'dig_roll_film'
+                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                       : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                   }`}
                 >
@@ -364,12 +445,17 @@ export default function App() {
             <div className={`lg:col-span-7 rounded-2xl border transition-all p-3.5 sm:p-4 ${
               printTechnology === 'gravure'
                 ? 'bg-gradient-to-br from-[#12142e] to-[#0a0d1f] border-indigo-500/60 shadow-[0_0_20px_rgba(99,102,241,0.15)] ring-1 ring-indigo-400/50'
-                : 'bg-[#0a0f1d] border-slate-800 hover:border-slate-700 opacity-80'
+                : 'bg-[#0a0f1d] border-slate-800/80 hover:border-slate-700 opacity-75'
             }`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 mb-2 border-b border-slate-800/80 gap-1.5">
-                <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => handleTechnologyChange('gravure')}>
+              <div
+                className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 mb-2 border-b border-slate-800/80 gap-1.5 cursor-pointer"
+                onClick={() => handleTechnologyChange('gravure')}
+              >
+                <div className="flex items-center gap-1.5">
                   <h3 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
-                    <span>Outil de tarification de gravure</span>
+                    <span className={printTechnology === 'gravure' ? 'text-indigo-300' : 'text-slate-300'}>
+                      Outil de tarification de gravure
+                    </span>
                     <Info className="w-3.5 h-3.5 text-slate-400" />
                   </h3>
                 </div>
@@ -378,33 +464,36 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Sous-onglets de gravure comme sur l'image 1 */}
+              {/* Sous-onglets interactifs de gravure */}
               <div className="flex items-center gap-4 text-xs font-semibold mb-3 border-b border-slate-800/60 pb-1.5">
                 <button
-                  onClick={() => setGravureTab('composite')}
-                  className={`pb-1 transition flex items-center gap-1 ${
+                  type="button"
+                  onClick={() => { setGravureTab('composite'); handleTechnologyChange('gravure'); }}
+                  className={`pb-1 transition flex items-center gap-1 cursor-pointer ${
                     gravureTab === 'composite'
-                      ? 'text-indigo-400 border-b-2 border-orange-500 font-bold'
+                      ? 'text-indigo-300 border-b-2 border-orange-500 font-bold'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Sacs composites
                 </button>
                 <button
-                  onClick={() => setGravureTab('single')}
-                  className={`pb-1 transition flex items-center gap-1 ${
+                  type="button"
+                  onClick={() => { setGravureTab('single'); handleTechnologyChange('gravure'); }}
+                  className={`pb-1 transition flex items-center gap-1 cursor-pointer ${
                     gravureTab === 'single'
-                      ? 'text-indigo-400 border-b-2 border-orange-500 font-bold'
+                      ? 'text-indigo-300 border-b-2 border-orange-500 font-bold'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   Sac à une seule couche
                 </button>
                 <button
-                  onClick={() => setGravureTab('tools')}
-                  className={`pb-1 transition flex items-center gap-1 ${
+                  type="button"
+                  onClick={() => { setGravureTab('tools'); handleTechnologyChange('gravure'); }}
+                  className={`pb-1 transition flex items-center gap-1 cursor-pointer ${
                     gravureTab === 'tools'
-                      ? 'text-indigo-400 border-b-2 border-orange-500 font-bold'
+                      ? 'text-indigo-300 border-b-2 border-orange-500 font-bold'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -412,128 +501,251 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Grille des sacs de gravure */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                {/* 1. Sac 3 soudures */}
-                <button
-                  onClick={() => handleBagSelection('three_side', 'gravure', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'gravure' && dimensions.bagType === 'three_side' && !dimensions.hasZip
-                      ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-sm'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-indigo-400 shrink-0">
-                    <ThreeSideBagIcon className="w-5 h-5" />
-                  </div>
-                  <span className="truncate text-[11px] font-medium">sac à trois soudures</span>
-                </button>
+              {/* CONTENU ONGLET 1 : SACS COMPOSITES */}
+              {gravureTab === 'composite' && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                  {/* 1. Sac 3 soudures */}
+                  <button
+                    type="button"
+                    onClick={() => handleBagSelection({ id: 'grv_three_side', tech: 'gravure', bagType: 'three_side', hasZip: false })}
+                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                      selectedModelId === 'grv_three_side'
+                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-indigo-400 shrink-0">
+                      <ThreeSideBagIcon className="w-5 h-5" />
+                    </div>
+                    <span className="truncate text-[11px] font-medium">sac à trois soudures</span>
+                  </button>
 
-                {/* 2. Sac debout */}
-                <button
-                  onClick={() => handleBagSelection('stand_up', 'gravure', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'gravure' && dimensions.bagType === 'stand_up' && !dimensions.hasZip
-                      ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-sm'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-indigo-400 shrink-0">
-                    <StandUpBagIcon className="w-5 h-5" />
-                  </div>
-                  <span className="truncate text-[11px] font-medium">Sac debout</span>
-                </button>
+                  {/* 2. Sac debout */}
+                  <button
+                    type="button"
+                    onClick={() => handleBagSelection({ id: 'grv_stand_up', tech: 'gravure', bagType: 'stand_up', hasZip: false })}
+                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                      selectedModelId === 'grv_stand_up'
+                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-indigo-400 shrink-0">
+                      <StandUpBagIcon className="w-5 h-5" />
+                    </div>
+                    <span className="truncate text-[11px] font-medium">Sac debout</span>
+                  </button>
 
-                {/* 3. Sac octogonal */}
-                <button
-                  onClick={() => handleBagSelection('flat_bottom', 'gravure', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'gravure' && dimensions.bagType === 'flat_bottom'
-                      ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-sm'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-indigo-400 shrink-0">
-                    <FlatBottomBagIcon className="w-5 h-5" />
-                  </div>
-                  <span className="truncate text-[11px] font-medium">sac octogonal scellé</span>
-                </button>
+                  {/* 3. Sac octogonal */}
+                  <button
+                    type="button"
+                    onClick={() => handleBagSelection({ id: 'grv_flat_bottom', tech: 'gravure', bagType: 'flat_bottom', hasZip: false })}
+                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                      selectedModelId === 'grv_flat_bottom'
+                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-indigo-400 shrink-0">
+                      <FlatBottomBagIcon className="w-5 h-5" />
+                    </div>
+                    <span className="truncate text-[11px] font-medium">sac octogonal scellé</span>
+                  </button>
 
-                {/* 4. Sachet à fermeture éclair */}
-                <button
-                  onClick={() => handleBagSelection('stand_up', 'gravure', true)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'gravure' && dimensions.bagType === 'stand_up' && dimensions.hasZip
-                      ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-sm'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-indigo-400 shrink-0">
-                    <ZipperPouchIcon className="w-5 h-5" />
-                  </div>
-                  <span className="truncate text-[11px] font-medium">Sachet à fermetur...</span>
-                </button>
+                  {/* 4. Sachet à fermeture éclair */}
+                  <button
+                    type="button"
+                    onClick={() => handleBagSelection({ id: 'grv_zipper', tech: 'gravure', bagType: 'stand_up', hasZip: true })}
+                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                      selectedModelId === 'grv_zipper'
+                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-indigo-400 shrink-0">
+                      <ZipperPouchIcon className="w-5 h-5" />
+                    </div>
+                    <span className="truncate text-[11px] font-medium">Sachet à fermetur...</span>
+                  </button>
 
-                {/* 5. Sac accordéon */}
-                <button
-                  onClick={() => handleBagSelection('gusset', 'gravure', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'gravure' && dimensions.bagType === 'gusset'
-                      ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-sm'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-indigo-400 shrink-0">
-                    <GussetBagIcon className="w-5 h-5" />
-                  </div>
-                  <span className="truncate text-[11px] font-medium">Sac accordéon</span>
-                </button>
+                  {/* 5. Sac accordéon */}
+                  <button
+                    type="button"
+                    onClick={() => handleBagSelection({ id: 'grv_gusset', tech: 'gravure', bagType: 'gusset', hasZip: false })}
+                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                      selectedModelId === 'grv_gusset'
+                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-indigo-400 shrink-0">
+                      <GussetBagIcon className="w-5 h-5" />
+                    </div>
+                    <span className="truncate text-[11px] font-medium">Sac accordéon</span>
+                  </button>
 
-                {/* 6. Sac scellé sur le dos / côtés */}
-                <button
-                  onClick={() => handleBagSelection('center_seal', 'gravure', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'gravure' && dimensions.bagType === 'center_seal'
-                      ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-sm'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-indigo-400 shrink-0">
-                    <CenterSealBagIcon className="w-5 h-5" />
-                  </div>
-                  <span className="truncate text-[11px] font-medium">Sac scellé sur les ...</span>
-                </button>
+                  {/* 6. Sac scellé sur le dos / côtés */}
+                  <button
+                    type="button"
+                    onClick={() => handleBagSelection({ id: 'grv_center_seal', tech: 'gravure', bagType: 'center_seal', hasZip: false })}
+                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                      selectedModelId === 'grv_center_seal'
+                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-indigo-400 shrink-0">
+                      <CenterSealBagIcon className="w-5 h-5" />
+                    </div>
+                    <span className="truncate text-[11px] font-medium">Sac scellé sur les ...</span>
+                  </button>
 
-                {/* 7. Sac scellé sur quatre côtés */}
-                <button
-                  onClick={() => handleBagSelection('four_side', 'gravure', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'gravure' && dimensions.bagType === 'four_side'
-                      ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-sm'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-indigo-400 shrink-0">
-                    <FourSideBagIcon className="w-5 h-5" />
-                  </div>
-                  <span className="truncate text-[11px] font-medium">Sac scellé sur qu...</span>
-                </button>
+                  {/* 7. Sac scellé sur quatre côtés */}
+                  <button
+                    type="button"
+                    onClick={() => handleBagSelection({ id: 'grv_four_side', tech: 'gravure', bagType: 'four_side', hasZip: false })}
+                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                      selectedModelId === 'grv_four_side'
+                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-indigo-400 shrink-0">
+                      <FourSideBagIcon className="w-5 h-5" />
+                    </div>
+                    <span className="truncate text-[11px] font-medium">Sac scellé sur qu...</span>
+                  </button>
 
-                {/* 8. Film en rouleau auto */}
-                <button
-                  onClick={() => handleBagSelection('roll_film', 'gravure', false)}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left ${
-                    printTechnology === 'gravure' && dimensions.bagType === 'roll_film'
-                      ? 'bg-indigo-500/20 border-indigo-400 text-indigo-200 shadow-sm'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-indigo-400 shrink-0">
-                    <RollFilmIcon className="w-5 h-5" />
+                  {/* 8. Film en rouleau auto */}
+                  <button
+                    type="button"
+                    onClick={() => handleBagSelection({ id: 'grv_roll_film', tech: 'gravure', bagType: 'roll_film', hasZip: false })}
+                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                      selectedModelId === 'grv_roll_film'
+                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
+                    }`}
+                  >
+                    <div className="text-indigo-400 shrink-0">
+                      <RollFilmIcon className="w-5 h-5" />
+                    </div>
+                    <span className="truncate text-[11px] font-medium">Film en rouleau (a...</span>
+                  </button>
+                </div>
+              )}
+
+              {/* CONTENU ONGLET 2 : SACS MONOCOUCHE (UNE SEULE COUCHE SANS CONTRECOLLAGE) */}
+              {gravureTab === 'single' && (
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleBagSelection({ id: 'grv_single_pe', tech: 'gravure', bagType: 'three_side', hasZip: false, materialPreset: 'transparent_eco' })}
+                      className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                        selectedModelId === 'grv_single_pe'
+                          ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-md'
+                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <ThreeSideBagIcon className="w-5 h-5 text-indigo-400 shrink-0" />
+                      <div>
+                        <span className="block font-medium text-[11px] truncate">Sachet PE Transparent</span>
+                        <span className="text-[9px] text-slate-400">Monocouche sans alu</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleBagSelection({ id: 'grv_single_opp', tech: 'gravure', bagType: 'three_side', hasZip: false, materialPreset: 'transparent_eco' })}
+                      className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                        selectedModelId === 'grv_single_opp'
+                          ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-md'
+                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <ThreeSideBagIcon className="w-5 h-5 text-indigo-400 shrink-0" />
+                      <div>
+                        <span className="block font-medium text-[11px] truncate">Sachet OPP Brillant</span>
+                        <span className="text-[9px] text-slate-400">Confiserie / Textile</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleBagSelection({ id: 'grv_single_roll', tech: 'gravure', bagType: 'roll_film', hasZip: false, materialPreset: 'transparent_eco' })}
+                      className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                        selectedModelId === 'grv_single_roll'
+                          ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-md'
+                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <RollFilmIcon className="w-5 h-5 text-indigo-400 shrink-0" />
+                      <div>
+                        <span className="block font-medium text-[11px] truncate">Gaine / Rouleau PE</span>
+                        <span className="text-[9px] text-slate-400">Film d'ensachage direct</span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleBagSelection({ id: 'grv_single_kraft', tech: 'gravure', bagType: 'three_side', hasZip: false, materialPreset: 'kraft_eco_2layers' })}
+                      className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
+                        selectedModelId === 'grv_single_kraft'
+                          ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-md'
+                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 text-slate-300'
+                      }`}
+                    >
+                      <ThreeSideBagIcon className="w-5 h-5 text-amber-400 shrink-0" />
+                      <div>
+                        <span className="block font-medium text-[11px] truncate">Sachet Kraft Simple</span>
+                        <span className="text-[9px] text-slate-400">100% Recyclable / Bio</span>
+                      </div>
+                    </button>
                   </div>
-                  <span className="truncate text-[11px] font-medium">Film en rouleau (a...</span>
-                </button>
-              </div>
+                  <p className="text-[10px] text-slate-400 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                    💡 <strong>Sacs monocouches</strong> : Films simples sans complexe d'aluminium ni contrecollage lourd, parfaits pour emballage sec, boulangerie ou protection industrielle économique.
+                  </p>
+                </div>
+              )}
+
+              {/* CONTENU ONGLET 3 : OUTILS DE CALCUL ATELIER */}
+              {gravureTab === 'tools' && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span className="font-bold text-indigo-300 flex items-center gap-1.5 mb-1.5">
+                      <Ruler className="w-4 h-4 text-indigo-400" />
+                      <span>Surface & Format Développé</span>
+                    </span>
+                    <div className="space-y-1 font-mono text-[11px] text-slate-300">
+                      <div>Surface/sac : <span className="text-cyan-300">{((dimensions.widthCm * dimensions.heightCm * 2) / 10000).toFixed(4)} m²</span></div>
+                      <div>Total commande : <span className="text-cyan-300">{(((dimensions.widthCm * dimensions.heightCm * 2) / 10000) * dimensions.quantity).toFixed(1)} m²</span></div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span className="font-bold text-indigo-300 flex items-center gap-1.5 mb-1.5">
+                      <Scale className="w-4 h-4 text-indigo-400" />
+                      <span>Logistique & Poids Fret</span>
+                    </span>
+                    <div className="space-y-1 font-mono text-[11px] text-slate-300">
+                      <div>Poids unitaire : <span className="text-amber-300">{quote.weightUnitGrams.toFixed(2)} g</span></div>
+                      <div>Poids commande : <span className="text-amber-300">{quote.weightTotalKg.toFixed(1)} kg</span></div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span className="font-bold text-indigo-300 flex items-center gap-1.5 mb-1.5">
+                      <Layers className="w-4 h-4 text-indigo-400" />
+                      <span>Cylindres Gravure Cuivre</span>
+                    </span>
+                    <div className="space-y-1 font-mono text-[11px] text-slate-300">
+                      <div>Clichés nécessaires : <span className="text-rose-300">{dimensions.cylinderCount || 6} cylindres</span></div>
+                      <div>Coût cylindres : <span className="text-rose-300">{quote.cylindersCostCny.toFixed(0)} ¥</span></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
 
           </div>
@@ -543,8 +755,9 @@ export default function App() {
       {/* ===================== ONGLETS MOBILE (SMARTPHONE) ===================== */}
       <div className="sm:hidden border-b border-slate-800 bg-[#090f1d] px-2 py-2 flex items-center justify-between text-[11px] font-semibold sticky top-[57px] z-40">
         <button
+          type="button"
           onClick={() => setMobileTab('config')}
-          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition ${
+          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
             mobileTab === 'config' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'
           }`}
         >
@@ -552,8 +765,9 @@ export default function App() {
           <span>Dimensions</span>
         </button>
         <button
+          type="button"
           onClick={() => setMobileTab('finishes')}
-          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition ${
+          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
             mobileTab === 'finishes' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-slate-400'
           }`}
         >
@@ -561,8 +775,9 @@ export default function App() {
           <span>Finitions</span>
         </button>
         <button
+          type="button"
           onClick={() => setMobileTab('pricing')}
-          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition ${
+          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
             mobileTab === 'pricing' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400'
           }`}
         >
@@ -570,8 +785,9 @@ export default function App() {
           <span>Marges</span>
         </button>
         <button
+          type="button"
           onClick={() => setMobileTab('charts')}
-          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition ${
+          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
             mobileTab === 'charts' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'text-slate-400'
           }`}
         >
@@ -681,20 +897,94 @@ export default function App() {
               />
             </div>
 
-            {/* Complexe Matériau Mylar */}
-            <div>
-              <label className="text-[11px] font-semibold text-slate-300 block mb-1">
-                Structure Films & Barrière (Mylar) :
-              </label>
-              <select
-                value={dimensions.materialPreset}
-                onChange={e => handleDimChange('materialPreset', e.target.value)}
-                className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400"
-              >
-                {Object.entries(MATERIAL_PRESETS).map(([k, v]) => (
-                  <option key={k} value={k}>{v.name}</option>
-                ))}
-              </select>
+            {/* SÉLECTEUR DE STRUCTURE FILMS & BARRIÈRE */}
+            <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Structure Films & Barrière :</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsCustomStructure(!isCustomStructure)}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border transition flex items-center gap-1 cursor-pointer ${
+                    isCustomStructure
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 font-bold'
+                      : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Settings2 className="w-3 h-3" />
+                  <span>{isCustomStructure ? 'Mode Sur-Mesure Actif' : 'Personnaliser Couche par Couche'}</span>
+                </button>
+              </div>
+
+              {!isCustomStructure ? (
+                /* Liste complète de tous les 21 complexes groupés par familles */
+                <select
+                  value={dimensions.materialPreset}
+                  onChange={e => handleDimChange('materialPreset', e.target.value)}
+                  className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-cyan-400"
+                >
+                  {Object.entries(structureCategories).map(([category, items]) => (
+                    <optgroup key={category} label={`━━━ ${category.toUpperCase()} ━━━`}>
+                      {items.map(item => (
+                        <option key={item.key} value={item.key}>
+                          {item.name} {item.badge ? `[${item.badge}]` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              ) : (
+                /* Mode Sur Mesure Couche par Couche avec les 50 matières usine */
+                <div className="p-3 bg-slate-900/90 rounded-xl border border-cyan-500/30 space-y-2 text-xs">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">Couche 1 (Extérieure / Impression) :</span>
+                    <select
+                      value={customLayers.printLayerId}
+                      onChange={e => setCustomLayers(prev => ({ ...prev, printLayerId: e.target.value }))}
+                      className="w-full bg-[#080d18] border border-slate-700 rounded-lg p-1.5 text-xs text-cyan-300 outline-none"
+                    >
+                      {PRINT_LAYERS.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.code} - {m.nameFr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">Couche 2 (Barrière Intermédiaire) :</span>
+                    <select
+                      value={customLayers.barrierLayerId || 'none'}
+                      onChange={e => setCustomLayers(prev => ({ ...prev, barrierLayerId: e.target.value === 'none' ? null : e.target.value }))}
+                      className="w-full bg-[#080d18] border border-slate-700 rounded-lg p-1.5 text-xs text-indigo-300 outline-none"
+                    >
+                      <option value="none">Sans couche barrière (Structure 2 couches)</option>
+                      {BARRIER_LAYERS.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.code} - {m.nameFr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] text-slate-400 block mb-1">Couche 3 (Intérieure Thermosoudable PE/CPP) :</span>
+                    <select
+                      value={customLayers.sealLayerId}
+                      onChange={e => setCustomLayers(prev => ({ ...prev, sealLayerId: e.target.value }))}
+                      className="w-full bg-[#080d18] border border-slate-700 rounded-lg p-1.5 text-xs text-emerald-300 outline-none"
+                    >
+                      {SEAL_LAYERS.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.code} - {m.nameFr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Si Gravure : Sélection du nombre de cylindres cuivre */}
@@ -729,116 +1019,134 @@ export default function App() {
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span>Finitions & Accessoires en Images</span>
               </span>
-              <span className="text-[10px] text-slate-400">Cliquez pour activer</span>
+              <span className="text-[10px] text-slate-400">Cliquez pour activer / combiner</span>
             </div>
 
-            {/* Grille visuelle de toutes les finitions avec cartes interactives */}
+            {/* Grille visuelle de toutes les finitions avec cartes interactives fiables */}
             <div className="grid grid-cols-2 gap-2 text-xs">
               
               {/* 1. Vernis Mat Global */}
               <div
-                onClick={() => handleFinishChange('uvEnhancement', dimensions.finishes?.uvEnhancement === 'matte_varnish' ? 'none' : 'matte_varnish')}
+                onClick={() => toggleFinish('matteVarnish')}
                 className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  dimensions.finishes?.uvEnhancement === 'matte_varnish'
-                    ? 'bg-sky-500/20 border-sky-400 text-sky-200 shadow-[0_0_12px_rgba(56,189,248,0.2)]'
+                  finishesState.matteVarnish
+                    ? 'bg-sky-500/20 border-sky-400 text-sky-200 shadow-[0_0_12px_rgba(56,189,248,0.25)] ring-1 ring-sky-400/50'
                     : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                 }`}
               >
                 <div className="shrink-0">
-                  <MatteVarnishIcon active={dimensions.finishes?.uvEnhancement === 'matte_varnish'} />
+                  <MatteVarnishIcon active={finishesState.matteVarnish} />
                 </div>
-                <div className="min-w-0">
-                  <span className="block font-semibold text-[11px] truncate">Vernis Mat Global</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[11px] truncate">Vernis Mat Global</span>
+                    {finishesState.matteVarnish && <Check className="w-3.5 h-3.5 text-sky-400" />}
+                  </div>
                   <span className="text-[10px] text-slate-400 block">+0.40 ¥/m²</span>
                 </div>
               </div>
 
               {/* 2. Vernis Sélectif UV */}
               <div
-                onClick={() => handleFinishChange('uvEnhancement', dimensions.finishes?.uvEnhancement === 'spot_uv' ? 'none' : 'spot_uv')}
+                onClick={() => toggleFinish('spotUv')}
                 className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  dimensions.finishes?.uvEnhancement === 'spot_uv'
-                    ? 'bg-purple-500/20 border-purple-400 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.2)]'
+                  finishesState.spotUv
+                    ? 'bg-purple-500/20 border-purple-400 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.25)] ring-1 ring-purple-400/50'
                     : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                 }`}
               >
                 <div className="shrink-0">
-                  <SpotUvIcon active={dimensions.finishes?.uvEnhancement === 'spot_uv'} />
+                  <SpotUvIcon active={finishesState.spotUv} />
                 </div>
-                <div className="min-w-0">
-                  <span className="block font-semibold text-[11px] truncate">Vernis Sélectif UV</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[11px] truncate">Vernis Sélectif UV</span>
+                    {finishesState.spotUv && <Check className="w-3.5 h-3.5 text-purple-400" />}
+                  </div>
                   <span className="text-[10px] text-slate-400 block">+1.00 ¥/m²</span>
                 </div>
               </div>
 
               {/* 3. Dorure à Chaud */}
               <div
-                onClick={() => handleFinishChange('uvEnhancement', dimensions.finishes?.uvEnhancement === 'hot_stamping' ? 'none' : 'hot_stamping')}
+                onClick={() => toggleFinish('hotStamping')}
                 className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  dimensions.finishes?.uvEnhancement === 'hot_stamping'
-                    ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                  finishesState.hotStamping
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/50'
                     : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                 }`}
               >
                 <div className="shrink-0">
-                  <HotFoilIcon active={dimensions.finishes?.uvEnhancement === 'hot_stamping'} />
+                  <HotFoilIcon active={finishesState.hotStamping} />
                 </div>
-                <div className="min-w-0">
-                  <span className="block font-semibold text-[11px] truncate">Dorure à Chaud</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[11px] truncate">Dorure à Chaud</span>
+                    {finishesState.hotStamping && <Check className="w-3.5 h-3.5 text-amber-400" />}
+                  </div>
                   <span className="text-[10px] text-slate-400 block">+1.60 ¥/m²</span>
                 </div>
               </div>
 
               {/* 4. Valve de Dégazage Café */}
               <div
-                onClick={() => handleFinishChange('hasDegassingValve', !dimensions.finishes?.hasDegassingValve)}
+                onClick={() => toggleFinish('degassingValve')}
                 className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  dimensions.finishes?.hasDegassingValve
-                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+                  finishesState.degassingValve
+                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.25)] ring-1 ring-cyan-400/50'
                     : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                 }`}
               >
                 <div className="shrink-0">
-                  <DegassingValveIcon active={!!dimensions.finishes?.hasDegassingValve} />
+                  <DegassingValveIcon active={finishesState.degassingValve} />
                 </div>
-                <div className="min-w-0">
-                  <span className="block font-semibold text-[11px] truncate">Valve Dégazage</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[11px] truncate">Valve Dégazage</span>
+                    {finishesState.degassingValve && <Check className="w-3.5 h-3.5 text-cyan-400" />}
+                  </div>
                   <span className="text-[10px] text-slate-400 block">+0.22 ¥/pc</span>
                 </div>
               </div>
 
               {/* 5. Trou de Suspension */}
               <div
-                onClick={() => handleFinishChange('hasHangingHole', !dimensions.finishes?.hasHangingHole)}
+                onClick={() => toggleFinish('hangingHole')}
                 className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  dimensions.finishes?.hasHangingHole
-                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+                  finishesState.hangingHole
+                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-1 ring-emerald-400/50'
                     : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                 }`}
               >
                 <div className="shrink-0">
-                  <HangingHoleIcon active={!!dimensions.finishes?.hasHangingHole} />
+                  <HangingHoleIcon active={finishesState.hangingHole} />
                 </div>
-                <div className="min-w-0">
-                  <span className="block font-semibold text-[11px] truncate">Trou Suspension</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[11px] truncate">Trou Suspension</span>
+                    {finishesState.hangingHole && <Check className="w-3.5 h-3.5 text-emerald-400" />}
+                  </div>
                   <span className="text-[10px] text-slate-400 block">+0.03 ¥/pc</span>
                 </div>
               </div>
 
               {/* 6. Bouchon / Bec Verseur */}
               <div
-                onClick={() => handleFinishChange('spoutSize', dimensions.finishes?.spoutSize === 'spout_10mm' ? 'none' : 'spout_10mm')}
+                onClick={() => toggleFinish('spout')}
                 className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  dimensions.finishes?.spoutSize && dimensions.finishes.spoutSize !== 'none'
-                    ? 'bg-orange-500/20 border-orange-400 text-orange-200 shadow-[0_0_12px_rgba(249,115,22,0.2)]'
+                  finishesState.spout !== 'none'
+                    ? 'bg-orange-500/20 border-orange-400 text-orange-200 shadow-[0_0_12px_rgba(249,115,22,0.25)] ring-1 ring-orange-400/50'
                     : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                 }`}
               >
                 <div className="shrink-0">
-                  <SpoutFitmentIcon active={dimensions.finishes?.spoutSize && dimensions.finishes.spoutSize !== 'none'} />
+                  <SpoutFitmentIcon active={finishesState.spout !== 'none'} />
                 </div>
-                <div className="min-w-0">
-                  <span className="block font-semibold text-[11px] truncate">Bouchon / Bec</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[11px] truncate">Bouchon / Bec</span>
+                    {finishesState.spout !== 'none' && <Check className="w-3.5 h-3.5 text-orange-400" />}
+                  </div>
                   <span className="text-[10px] text-slate-400 block">+0.20 ¥/pc</span>
                 </div>
               </div>
@@ -848,15 +1156,18 @@ export default function App() {
                 onClick={() => handleDimChange('hasZip', !dimensions.hasZip)}
                 className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
                   dimensions.hasZip
-                    ? 'bg-blue-500/20 border-blue-400 text-blue-200 shadow-[0_0_12px_rgba(59,130,246,0.2)]'
+                    ? 'bg-blue-500/20 border-blue-400 text-blue-200 shadow-[0_0_12px_rgba(59,130,246,0.25)] ring-1 ring-blue-400/50'
                     : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
                 }`}
               >
                 <div className="shrink-0">
                   <ZipLockIcon active={dimensions.hasZip} />
                 </div>
-                <div className="min-w-0">
-                  <span className="block font-semibold text-[11px] truncate">Fermeture Zip</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[11px] truncate">Fermeture Zip</span>
+                    {dimensions.hasZip && <Check className="w-3.5 h-3.5 text-blue-400" />}
+                  </div>
                   <span className="text-[10px] text-slate-400 block">{dimensions.hasZip ? 'Actif' : 'Désactivé'}</span>
                 </div>
               </div>
@@ -888,7 +1199,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => handleDimChange('resalePricingMode', 'percentage')}
-                className={`py-1.5 px-2 rounded-xl border text-center transition ${
+                className={`py-1.5 px-2 rounded-xl border text-center transition cursor-pointer ${
                   dimensions.resalePricingMode === 'percentage'
                     ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-md'
                     : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -899,7 +1210,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => handleDimChange('resalePricingMode', 'multiplier')}
-                className={`py-1.5 px-2 rounded-xl border text-center transition ${
+                className={`py-1.5 px-2 rounded-xl border text-center transition cursor-pointer ${
                   dimensions.resalePricingMode === 'multiplier'
                     ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-md'
                     : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -910,7 +1221,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => handleDimChange('resalePricingMode', 'fixed_price')}
-                className={`py-1.5 px-2 rounded-xl border text-center transition ${
+                className={`py-1.5 px-2 rounded-xl border text-center transition cursor-pointer ${
                   dimensions.resalePricingMode === 'fixed_price'
                     ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-md'
                     : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700'

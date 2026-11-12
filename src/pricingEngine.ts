@@ -1,4 +1,5 @@
 import dbRaw from './databases_clean.json';
+import { ALL_STRUCTURE_PRESETS } from './materialsCatalog';
 
 export type PrintTechnology = 'digital' | 'gravure';
 
@@ -110,6 +111,7 @@ export const BAG_TYPES_CATALOG: BagTypeDefinition[] = [
 
 export interface FinishesOptions {
   uvEnhancement?: 'none' | 'matte_varnish' | 'spot_uv' | 'thick_uv' | 'hot_stamping' | 'uv_and_hot_stamping';
+  hasMatteVarnish?: boolean;
   spoutSize?: 'none' | 'spout_10mm' | 'spout_16mm';
   hasDegassingValve?: boolean;
   hasHangingHole?: boolean;
@@ -156,7 +158,12 @@ export interface BagDimensions {
   quantity: number;
   thicknessSi?: number;
   hasZip?: boolean;
-  materialPreset?: 'mylar_standard' | 'kraft_mylar' | 'holo_mylar' | 'opp_pe';
+  materialPreset?: string;
+  customLayers?: {
+    printLayerId?: string;
+    barrierLayerId?: string | null;
+    sealLayerId?: string;
+  };
   cylinderCount?: number;
   finishes?: FinishesOptions;
   // Stratégie de revente personnalisable
@@ -200,40 +207,7 @@ export interface QuoteBreakdown {
   cylinderFeePerUnitCny: number;
 }
 
-export const MATERIAL_PRESETS = {
-  mylar_standard: {
-    name: 'Mylar Standard (PET19 + VMPET12 + PE85)',
-    description: 'Structure 3 couches haute barrière opaque et étanche',
-    printLayer: 'FINST-SBD660C1P314UIQ4HB1M98CUF1AQ23CB4NSMMSP3',
-    barrierLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMM76A1',
-    sealLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMM5A1',
-    thickness: 12
-  },
-  kraft_mylar: {
-    name: 'Kraft + Mylar (Kraft35g + VMPET12 + PE70)',
-    description: 'Aspect naturel kraft avec barrière intérieure argentée',
-    printLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMA5A1',
-    barrierLayer: 'FINST-SBD660C1P314UIQ4HB1M98CUF1AQ23CB4NSMMSP7',
-    sealLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMML5A1',
-    thickness: 16
-  },
-  holo_mylar: {
-    name: 'Holographique / Laser Mylar (PET19 + LaserVMPET12 + PE85)',
-    description: 'Effet arc-en-ciel brillant avec protection UV',
-    printLayer: 'FINST-SBD660C1P314UIQ4HB1M98CUF1AQ23CB4NSMMSP3',
-    barrierLayer: 'FINST-XE7668C1F83462HCOE8Q661WP0I936MZZ6UMMLL3',
-    sealLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMM5A1',
-    thickness: 12
-  },
-  opp_pe: {
-    name: 'Transparent Eco (BOPP25 + PE70)',
-    description: '2 couches transparentes économiques',
-    printLayer: 'FINST-SBD660C1P314UIQ4HB1M98CUF1AQ23CB4NSMMSP1',
-    barrierLayer: null,
-    sealLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMML5A1',
-    thickness: 9.5
-  }
-};
+export const MATERIAL_PRESETS = ALL_STRUCTURE_PRESETS;
 
 export const CNY_TO_EUR_RATE = 1 / 7.8; // 1 € = 7.80 CNY
 
@@ -287,9 +261,13 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
 
   // Données usine
   const dxcsItem = uData.utils.getPickerData({ instanceId: zipId, arr: uData.organConfig.dxcs, key: 'id' });
-  const yscItem = uData.utils.getPickerData({ instanceId: preset.printLayer, arr: uData.organConfig.clk, key: 'id' });
-  const zgcItem = preset.barrierLayer ? uData.utils.getPickerData({ instanceId: preset.barrierLayer, arr: uData.organConfig.clk, key: 'id' }) : {};
-  const rfcItem = uData.utils.getPickerData({ instanceId: preset.sealLayer, arr: uData.organConfig.clk, key: 'id' });
+    const printLayerId = dim.customLayers?.printLayerId || preset.printLayer;
+  const barrierLayerId = dim.customLayers ? dim.customLayers.barrierLayerId : preset.barrierLayer;
+  const sealLayerId = dim.customLayers?.sealLayerId || preset.sealLayer;
+
+  const yscItem = uData.utils.getPickerData({ instanceId: printLayerId, arr: uData.organConfig.clk, key: 'id' });
+  const zgcItem = barrierLayerId ? uData.utils.getPickerData({ instanceId: barrierLayerId, arr: uData.organConfig.clk, key: 'id' }) : {};
+  const rfcItem = uData.utils.getPickerData({ instanceId: sealLayerId, arr: uData.organConfig.clk, key: 'id' });
   const ysItem = uData.utils.getPickerData({ instanceId: 'FINST-S2666U81G8637K87P1PXB4B72O313U0E6PEMMO8U1', arr: uData.organConfig.gxcb, key: 'id' });
 
   const qtcs = uData.organConfig.qtcs;
@@ -348,7 +326,9 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
   const yslz_cs = sh_cs + gg_lzs;
   const gx_uv01 = uvConfig.unitCost;
   const gx_uv02 = uvConfig.minFee;
-  const js_ys = (MAX(gx_ys02, yslz_cs * gx_ys01 + sh_hs * qt01) + MAX(gx_uv02, yslz_cs * gx_uv01)) * (1 + qt19 / 100);
+  const hasMatte = dim.finishes?.hasMatteVarnish ?? (uvKey === 'matte_varnish');
+  const matteCost = (hasMatte && uvKey !== 'matte_varnish') ? MAX(100, yslz_cs * 0.40) : 0;
+  const js_ys = (MAX(gx_ys02, yslz_cs * gx_ys01 + sh_hs * qt01) + MAX(gx_uv02, yslz_cs * gx_uv01) + matteCost) * (1 + qt19 / 100);
 
   // 3. Contrecollage (fh)
   const fhRow = fhcs[0] || { numberField_mgka3e9f: 80, numberField_mgka3e9g: 700, numberField_mgka3e9h: 0.25 };

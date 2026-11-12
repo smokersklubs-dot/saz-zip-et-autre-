@@ -137,3 +137,4 @@ export function ZipLockIcon({ active = false, className = 'w-7 h-7' }: { active?
     </svg>
   );
 }
+
