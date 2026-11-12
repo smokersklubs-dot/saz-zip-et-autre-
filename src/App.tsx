@@ -1,1856 +1,1338 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  Cpu,
-  Sparkles,
-  Sliders,
-  DollarSign,
-  PieChart as PieIcon,
-  Lock,
-  EyeOff,
-  Box,
-  Calculator,
-  BarChart3,
-  Info,
-  Check,
-  Scale,
-  Ruler,
-  Layers,
-  Settings2,
-  Truck,
-  Clock,
-  FileText,
-  Copy,
-  AlertTriangle,
-  Scissors,
-  Palette,
-  PackageCheck
-} from 'lucide-react';
-import {
-  ResponsiveContainer,
-  Tooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Legend
-} from 'recharts';
-import {
-  calculateMylarQuote,
-  calculateTierMatrix,
-  MATERIAL_PRESETS,
   BAG_TYPES_CATALOG,
-  BOTTOM_MODES_CATALOG,
   BagDimensions,
   BagTypeKey,
-  PrintTechnology,
+  BOTTOM_MODES_CATALOG,
+  calculateMylarQuote,
+  CNY_TO_EUR_RATE,
   CuttingType,
-  BottomMode,
   DigitalPrintMode,
-  OrderUrgency,
+  FinishesOptions,
+  FourSideOrientation,
+  FREIGHT_ZONES_CATALOG,
   InvoiceType,
-  ShippingMode,
-  CNY_TO_EUR_RATE
-} from './pricingEngine';
-import {
+  LaminationMethod,
+  MATERIAL_PRESETS,
+  OrderUrgency,
   PRINT_LAYERS,
   BARRIER_LAYERS,
-  SEAL_LAYERS
-} from './materialsCatalog';
+  SEAL_LAYERS,
+  PrintTechnology,
+  RollQuoteMode,
+  ShippingMode,
+  BottomMode
+} from './pricingEngine';
+import { StudioShowcase } from './components/StudioShowcase';
+import { FinishesStudio } from './components/FinishesStudio';
+import { WorkshopToolsTab } from './components/WorkshopToolsTab';
+import { ComparisonTiersTab } from './components/ComparisonTiersTab';
+import { FactoryAuditTab } from './components/FactoryAuditTab';
+import { ProposalPrintModal } from './components/ProposalPrintModal';
 import {
-  StandUpBagIcon,
-  ThreeSideBagIcon,
-  ZipperPouchIcon,
-  FlatBottomBagIcon,
-  GussetBagIcon,
-  FourSideBagIcon,
-  CenterSealBagIcon,
-  RollFilmIcon
-} from './components/BagVisuals';
-import {
-  MatteVarnishIcon,
-  SpotUvIcon,
-  ThickUv3DIcon,
-  HotFoilIcon,
-  DegassingValveIcon,
-  HangingHoleIcon,
-  SpoutFitmentIcon,
-  ZipLockIcon,
-  DieCutShapeIcon
-} from './components/VisualFinishes';
+  Check,
+  Copy,
+  FileText,
+  Layers,
+  Package,
+  Printer,
+  Sliders,
+  Sparkles,
+  Truck,
+  Wrench,
+  BarChart3,
+  Shield
+} from 'lucide-react';
 
-export default function App() {
-  const [printTechnology, setPrintTechnology] = useState<PrintTechnology>('digital');
-  const [gravureTab, setGravureTab] = useState<'composite' | 'single' | 'tools'>('composite');
-  const [mobileTab, setMobileTab] = useState<'config' | 'finishes' | 'pricing' | 'charts'>('config');
+type ActiveTab = 'configurator' | 'tiers' | 'tools' | 'audit';
 
-  // Identifiant unique du bouton de sac sélectionné
-  const [selectedModelId, setSelectedModelId] = useState<string>('dig_zipper');
+const FORMAT_PRESETS = [
+  { label: 'Pocket 3,5g (9×13+6)', w: 9, h: 13, b: 6 },
+  { label: 'Classique 28g (12×18+8)', w: 12, h: 18, b: 8 },
+  { label: 'Café 250g (16×23+9)', w: 16, h: 23, b: 9 },
+  { label: 'Format 1kg (20×30+10)', w: 20, h: 30, b: 10 }
+];
 
-  // Mode structure sur-mesure (jusqu'à 5 couches comme dans didMount.js / suanfa.js)
-  const [isCustomStructure, setIsCustomStructure] = useState<boolean>(false);
-  const [customLayers, setCustomLayers] = useState({
-    printLayerId: PRINT_LAYERS[0].id,
-    barrierLayerId: BARRIER_LAYERS[0].id as string | null,
-    barrierLayer2Id: null as string | null,
-    barrierLayer3Id: null as string | null,
-    sealLayerId: SEAL_LAYERS[0].id as string | null,
-    isSingleLayer: false
-  });
+export function App() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>('configurator');
+  const [displayCurrency, setDisplayCurrency] = useState<'EUR' | 'CNY'>('EUR');
+  const [proposalOpen, setProposalOpen] = useState(false);
+  const [copiedBanner, setCopiedBanner] = useState<'fr' | 'zh' | null>(null);
 
-  // États indépendants des finitions pour pouvoir les combiner librement
-  const [finishesState, setFinishesState] = useState({
-    matteVarnish: false,
-    spotUv: false,
-    thickUv: false,
-    hotStamping: false,
-    degassingValve: false,
-    hangingHole: false,
-    spout: 'none' as 'none' | 'spout_10mm' | 'spout_16mm',
+  // État principal du configurateur
+  const [technology, setTechnology] = useState<PrintTechnology>('digital');
+  const [bagType, setBagType] = useState<BagTypeKey>('stand_up');
+  const [zipperInstId, setZipperInstId] = useState<string>(BAG_TYPES_CATALOG[0].zipperOptions[0].instId);
+  const [isSingleLayer, setIsSingleLayer] = useState<boolean>(false);
+
+  const [widthCm, setWidthCm] = useState<number>(13);
+  const [heightCm, setHeightCm] = useState<number>(20);
+  const [bottomCm, setBottomCm] = useState<number>(7);
+  const [sideGussetCm, setSideGussetCm] = useState<number>(6);
+  const [quantity, setQuantity] = useState<number>(2500);
+  const [skuCount, setSkuCount] = useState<number>(1);
+
+  const [rollQuoteMode, setRollQuoteMode] = useState<RollQuoteMode>('pcs');
+  const [rollTargetMeters, setRollTargetMeters] = useState<number>(1500);
+  const [rollTargetKg, setRollTargetKg] = useState<number>(100);
+
+  const [cuttingType, setCuttingType] = useState<CuttingType>('double_cut');
+  const [bottomMode, setBottomMode] = useState<BottomMode>(1);
+  const [fourSideOrientation, setFourSideOrientation] = useState<FourSideOrientation>('vertical');
+  const [digitalPrintMode, setDigitalPrintMode] = useState<DigitalPrintMode>('cmyk_white');
+  const [cylinderCount, setCylinderCount] = useState<number>(6);
+  const [laminationMethod, setLaminationMethod] = useState<LaminationMethod>('dry');
+
+  // Structure Matériau
+  const [materialPreset, setMaterialPreset] = useState<string>('mylar_standard');
+  const [useCustomLayers, setUseCustomLayers] = useState<boolean>(false);
+  const [customPrintLayerId, setCustomPrintLayerId] = useState<string>(PRINT_LAYERS[0].id);
+  const [customBarrier1Id, setCustomBarrier1Id] = useState<string | null>(BARRIER_LAYERS[0].id);
+  const [customBarrier2Id, setCustomBarrier2Id] = useState<string | null>(null);
+  const [customSealLayerId, setCustomSealLayerId] = useState<string>(SEAL_LAYERS[0].id);
+  const [materialCategoryFilter, setMaterialCategoryFilter] = useState<string>('Tous');
+
+  // Finitions
+  const [finishes, setFinishes] = useState<FinishesOptions>({
+    uvEnhancement: 'none',
+    spoutSize: 'none',
+    hasDegassingValve: false,
+    hasHangingHole: false,
     hasWindow: false,
+    windowCount: 1,
     hasEmbossing: false,
     hasAdhesiveStrip: false,
     fullInkCoverage: false
   });
 
-  const [copiedLang, setCopiedLang] = useState<'FR' | 'ZH' | null>(null);
+  // Logistique & Fiscalité
+  const [shippingMode, setShippingMode] = useState<ShippingMode>('guangdong_free');
+  const [shippingRegionId, setShippingRegionId] = useState<string>('福建、江苏、上海、浙江、江西');
+  const [customShippingCny, setCustomShippingCny] = useState<number>(0);
+  const [orderUrgency, setOrderUrgency] = useState<OrderUrgency>('normal');
+  const [invoiceType, setInvoiceType] = useState<InvoiceType>('no_invoice');
+  const [extraFeeCny, setExtraFeeCny] = useState<number>(0);
 
-  const [dimensions, setDimensions] = useState<BagDimensions>({
-    technology: 'digital',
-    bagType: 'stand_up',
-    zipperInstId: 'FINST-U0H66D817563AUNFHE07PAXXY6MA30N34PEMMX822',
-    widthCm: 15,
-    heightCm: 25,
-    bottomCm: 6,
-    sideGussetCm: 4,
-    quantity: 1000,
-    skuCount: 1,
-    cuttingType: 'double_cut',
-    bottomMode: 1,
-    digitalPrintMode: 'cmyk_white',
-    orderUrgency: 'normal',
-    invoiceType: 'no_invoice',
-    shippingMode: 'none',
-    customShippingCny: 0,
-    extraFeeCny: 0,
-    hasZip: true,
-    materialPreset: 'mylar_standard',
-    cylinderCount: 6,
-    resalePricingMode: 'percentage',
-    resaleMarginPercent: 45,
-    resaleMultiplier: 1.85,
-    resaleFixedUnitPriceEur: 0.35
-  });
+  // Stratégie de Revente
+  const [resalePricingMode, setResalePricingMode] = useState<'percentage' | 'multiplier' | 'fixed_price'>('percentage');
+  const [resaleMarginPercent, setResaleMarginPercent] = useState<number>(45);
+  const [resaleMultiplier, setResaleMultiplier] = useState<number>(1.85);
+  const [resaleFixedUnitPriceEur, setResaleFixedUnitPriceEur] = useState<number>(0.35);
 
-  const [activeCurrency, setActiveCurrency] = useState<'EUR' | 'CNY'>('EUR');
-  const [showAdminDetails, setShowAdminDetails] = useState(true);
+  const activeBagDef = BAG_TYPES_CATALOG.find(b => b.key === bagType) || BAG_TYPES_CATALOG[0];
 
-  // Regroupement des 25 structures par familles
-  const structureCategories = useMemo(() => {
-    const cats: Record<string, { key: string; name: string; badge?: string; silk: number }[]> = {};
-    Object.entries(MATERIAL_PRESETS).forEach(([key, preset]) => {
-      const cat = preset.category || 'Autres Complexes';
-      if (!cats[cat]) cats[cat] = [];
-      cats[cat].push({
-        key,
-        name: preset.name,
-        badge: preset.badge,
-        silk: preset.totalThicknessSilk
-      });
-    });
-    return cats;
+  const handleBagTypeChange = (nextKey: BagTypeKey) => {
+    setBagType(nextKey);
+    const nextDef = BAG_TYPES_CATALOG.find(b => b.key === nextKey) || BAG_TYPES_CATALOG[0];
+    setZipperInstId(nextDef.zipperOptions[0].instId);
+    setBottomMode(nextDef.defaultBottomMode);
+  };
+
+  const handleTechChange = (nextTech: PrintTechnology) => {
+    setTechnology(nextTech);
+    if (nextTech === 'gravure' && quantity < 5000) {
+      setQuantity(10000);
+    } else if (nextTech === 'digital' && quantity > 15000) {
+      setQuantity(2500);
+    }
+  };
+
+  const materialCategories = useMemo(() => {
+    const cats = Array.from(new Set(Object.values(MATERIAL_PRESETS).map(p => p.category)));
+    return ['Tous', ...cats];
   }, []);
 
-  // Résolution de la finition UV / 3D UV / Dorure combinée selon la table gxcb
-  const computedUvEnhancement = useMemo((): 'none' | 'matte_varnish' | 'spot_uv' | 'thick_uv' | 'hot_stamping' | 'uv_and_hot_stamping' => {
-    if ((finishesState.spotUv || finishesState.thickUv) && finishesState.hotStamping) return 'uv_and_hot_stamping';
-    if (finishesState.thickUv) return 'thick_uv';
-    if (finishesState.spotUv) return 'spot_uv';
-    if (finishesState.hotStamping) return 'hot_stamping';
-    if (finishesState.matteVarnish) return 'matte_varnish';
-    return 'none';
-  }, [finishesState.spotUv, finishesState.thickUv, finishesState.hotStamping, finishesState.matteVarnish]);
+  const filteredPresets = useMemo(() => {
+    const list = Object.values(MATERIAL_PRESETS);
+    if (materialCategoryFilter === 'Tous') return list;
+    return list.filter(p => p.category === materialCategoryFilter);
+  }, [materialCategoryFilter]);
 
-  // Synchronisation complète des paramètres avec le moteur
-  const activeDimensions = useMemo((): BagDimensions => {
-    return {
-      ...dimensions,
-      technology: printTechnology,
-      customLayers: (isCustomStructure || customLayers.isSingleLayer) ? customLayers : undefined,
-      finishes: {
-        uvEnhancement: computedUvEnhancement,
-        hasMatteVarnish: finishesState.matteVarnish,
-        hasThickUv: finishesState.thickUv,
-        spoutSize: finishesState.spout,
-        hasDegassingValve: finishesState.degassingValve,
-        hasHangingHole: finishesState.hangingHole,
-        hasWindow: finishesState.hasWindow,
-        hasEmbossing: finishesState.hasEmbossing,
-        hasAdhesiveStrip: finishesState.hasAdhesiveStrip,
-        fullInkCoverage: finishesState.fullInkCoverage
-      }
-    };
-  }, [dimensions, printTechnology, isCustomStructure, customLayers, computedUvEnhancement, finishesState]);
+  const dimPayload: BagDimensions = useMemo(() => ({
+    technology,
+    bagType,
+    zipperInstId,
+    widthCm,
+    heightCm,
+    bottomCm,
+    sideGussetCm,
+    quantity,
+    skuCount,
+    cuttingType,
+    bottomMode,
+    fourSideOrientation,
+    rollQuoteMode,
+    rollTargetMeters,
+    rollTargetKg,
+    digitalPrintMode,
+    cylinderCount,
+    laminationMethod,
+    orderUrgency,
+    invoiceType,
+    shippingMode,
+    shippingRegionId,
+    customShippingCny,
+    extraFeeCny,
+    materialPreset,
+    customLayers: isSingleLayer
+      ? {
+          isSingleLayer: true,
+          printLayerId: customPrintLayerId
+        }
+      : useCustomLayers
+        ? {
+            isSingleLayer: false,
+            printLayerId: customPrintLayerId,
+            barrierLayerId: customBarrier1Id,
+            barrierLayer2Id: customBarrier2Id,
+            sealLayerId: customSealLayerId
+          }
+        : undefined,
+    finishes,
+    resalePricingMode,
+    resaleMarginPercent,
+    resaleMultiplier,
+    resaleFixedUnitPriceEur
+  }), [
+    technology, bagType, zipperInstId, widthCm, heightCm, bottomCm, sideGussetCm,
+    quantity, skuCount, cuttingType, bottomMode, fourSideOrientation, rollQuoteMode,
+    rollTargetMeters, rollTargetKg, digitalPrintMode, cylinderCount, laminationMethod,
+    orderUrgency, invoiceType, shippingMode, shippingRegionId, customShippingCny, extraFeeCny,
+    materialPreset, isSingleLayer, useCustomLayers, customPrintLayerId, customBarrier1Id,
+    customBarrier2Id, customSealLayerId, finishes, resalePricingMode, resaleMarginPercent,
+    resaleMultiplier, resaleFixedUnitPriceEur
+  ]);
 
-  const currentBagDef = useMemo(() => {
-    return BAG_TYPES_CATALOG.find(b => b.key === dimensions.bagType) || BAG_TYPES_CATALOG[0];
-  }, [dimensions.bagType]);
+  const quote = useMemo(() => calculateMylarQuote(dimPayload), [dimPayload]);
 
-  // Sélection d'un sac (Numérique ou Gravure)
-  const handleBagSelection = (config: {
-    id: string;
-    tech: PrintTechnology;
-    bagType: BagTypeKey;
-    hasZip: boolean;
-    materialPreset?: string;
-    singleLayerPrintId?: string;
-  }) => {
-    setSelectedModelId(config.id);
-    setPrintTechnology(config.tech);
-    const bagDef = BAG_TYPES_CATALOG.find(b => b.key === config.bagType) || BAG_TYPES_CATALOG[0];
-    const matchedZip = bagDef.zipperOptions.find(z => config.hasZip ? z.hasZip : !z.hasZip) || bagDef.zipperOptions[0];
+  const selectedZipObj = activeBagDef.zipperOptions.find(z => z.instId === zipperInstId) || activeBagDef.zipperOptions[0];
+  const presetObj = MATERIAL_PRESETS[materialPreset] || MATERIAL_PRESETS.mylar_standard;
 
-    if (config.singleLayerPrintId) {
-      setCustomLayers(prev => ({
-        ...prev,
-        printLayerId: config.singleLayerPrintId!,
-        isSingleLayer: true
-      }));
-    } else {
-      setCustomLayers(prev => ({
-        ...prev,
-        isSingleLayer: false
-      }));
+  const formatMainMoney = (eurVal: number, cnyVal: number, decimals = 2) => {
+    if (displayCurrency === 'CNY') {
+      return `${cnyVal.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })} ¥`;
     }
-
-    setDimensions(prev => ({
-      ...prev,
-      technology: config.tech,
-      bagType: config.bagType,
-      hasZip: matchedZip.hasZip,
-      zipperInstId: matchedZip.instId,
-      bottomMode: bagDef.defaultBottomMode,
-      quantity: config.tech === 'gravure' ? Math.max(10000, prev.quantity) : (prev.quantity > 10000 ? 1000 : prev.quantity),
-      materialPreset: config.materialPreset || prev.materialPreset
-    }));
+    return `${eurVal.toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })} €`;
   };
 
-  // Bascule entre Numérique et Gravure
-  const handleTechnologyChange = (tech: PrintTechnology) => {
-    setPrintTechnology(tech);
-    setDimensions(prev => ({
-      ...prev,
-      technology: tech,
-      quantity: tech === 'gravure' ? Math.max(10000, prev.quantity) : (prev.quantity > 10000 ? 1000 : prev.quantity)
-    }));
-    if (tech === 'digital') {
-      setCustomLayers(prev => ({ ...prev, isSingleLayer: false }));
-      if (selectedModelId.startsWith('grv_')) {
-        setSelectedModelId('dig_' + selectedModelId.replace('grv_', ''));
-      }
-    } else if (tech === 'gravure' && selectedModelId.startsWith('dig_')) {
-      setSelectedModelId('grv_' + selectedModelId.replace('dig_', ''));
-    }
-  };
+  // Proportions pour la barre visuelle empilée
+  const resaleTotalSafe = Math.max(0.01, quote.resalePriceTotalCny);
+  const pctMaterial = Math.round((quote.materialCostCny / resaleTotalSafe) * 100);
+  const pctPrint = Math.round(((quote.printCostCny + quote.cylindersCostCny) / resaleTotalSafe) * 100);
+  const pctConv = Math.round(((quote.laminationCostCny + quote.bagMakingCostCny + quote.accessoriesCostCny + quote.dieCutPlateCostCny) / resaleTotalSafe) * 100);
+  const pctMisc = Math.round(((quote.shippingCostCny + quote.rushFeeCny + quote.taxCostCny + quote.extraFeeCny) / resaleTotalSafe) * 100);
+  const pctProfit = Math.max(0, 100 - (pctMaterial + pctPrint + pctConv + pctMisc));
 
-  const quote = useMemo(() => {
-    return calculateMylarQuote(activeDimensions);
-  }, [activeDimensions]);
-
-  const tierData = useMemo(() => {
-    const tiers = printTechnology === 'gravure'
-      ? [5000, 10000, 20000, 50000, 100000]
-      : [250, 500, 1000, 2500, 5000, 10000];
-    const results = calculateTierMatrix(activeDimensions, tiers);
-    return results.map((r, i) => ({
-      qty: tiers[i],
-      label: tiers[i] >= 1000 ? `${tiers[i] / 1000}k` : `${tiers[i]}`,
-      salePriceEur: r.resalePriceUnitEur,
-      catalogPriceEur: r.beijincaiCatalogUnitEur,
-      factoryCostEur: r.factoryCostUnitEur,
-      grossProfitEur: r.grossProfitUnitEur,
-      marginPct: r.grossMarginPercent
-    }));
-  }, [activeDimensions, printTechnology]);
-
-  const handleDimChange = (field: keyof BagDimensions, value: any) => {
-    setDimensions(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleZipSelect = (instId: string) => {
-    const opt = currentBagDef.zipperOptions.find(z => z.instId === instId);
-    setDimensions(prev => ({
-      ...prev,
-      zipperInstId: instId,
-      hasZip: opt ? opt.hasZip : prev.hasZip
-    }));
-  };
-
-  const toggleFinish = (key: keyof typeof finishesState) => {
-    if (key === 'spout') {
-      setFinishesState(prev => ({
-        ...prev,
-        spout: prev.spout === 'none' ? 'spout_10mm' : prev.spout === 'spout_10mm' ? 'spout_16mm' : 'none'
-      }));
-    } else if (key === 'thickUv') {
-      setFinishesState(prev => ({
-        ...prev,
-        thickUv: !prev.thickUv,
-        spotUv: !prev.thickUv ? false : prev.spotUv
-      }));
-    } else if (key === 'spotUv') {
-      setFinishesState(prev => ({
-        ...prev,
-        spotUv: !prev.spotUv,
-        thickUv: !prev.spotUv ? false : prev.thickUv
-      }));
-    } else {
-      setFinishesState(prev => ({
-        ...prev,
-        [key]: !prev[key]
-      }));
-    }
-  };
-
-  const handleCopyQuote = (lang: 'FR' | 'ZH') => {
-    const text = lang === 'FR' ? quote.imposition.quoteSpecFr : quote.imposition.quoteSpecZh;
-    navigator.clipboard.writeText(text);
-    setCopiedLang(lang);
-    setTimeout(() => setCopiedLang(null), 2500);
-  };
-
-  const formatMoney = (eur: number, cny: number, decimals = 2) => {
-    return activeCurrency === 'EUR'
-      ? `${eur.toFixed(decimals)} €`
-      : `${cny.toFixed(decimals)} ¥`;
+  const copyQuoteText = (lang: 'fr' | 'zh') => {
+    const content = lang === 'fr' ? quote.imposition.quoteSpecFr : quote.imposition.quoteSpecZh;
+    navigator.clipboard?.writeText(content);
+    setCopiedBanner(lang);
+    setTimeout(() => setCopiedBanner(null), 2200);
   };
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200 pb-20 sm:pb-8">
-      {/* ===================== NAVBAR ===================== */}
-      <header className="border-b border-slate-800 bg-[#0a101f]/95 backdrop-blur sticky top-0 z-50 px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
-            <Cpu className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-300 animate-pulse" />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold tracking-wider text-xs sm:text-sm bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-300 bg-clip-text text-transparent">
-                ANTIGRAVITY MYLAR V5.0.2
-              </span>
-              <span className="text-[9px] uppercase font-mono px-1.5 py-0.2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold">
-                100% Usine Beijincai
-              </span>
+    <div className="min-h-screen bg-maison-canvas text-maison-ink pb-24 lg:pb-12">
+      {/* ================================================================= */}
+      {/* EN-TÊTE ATELIER ÉDITORIAL                                         */}
+      {/* ================================================================= */}
+      <header className="no-print sticky top-0 z-40 bg-maison-canvas/90 backdrop-blur-md border-b border-maison-border">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+          {/* Identité Maison */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[#171614] flex items-center justify-center shadow-sm">
+              <span className="font-serif text-lg font-semibold text-[#C29B61]">M</span>
             </div>
-            <p className="text-[10px] text-slate-400 hidden sm:block">
-              Moteur intégral suanfa.js (5 couches, 25 structures, découpe forme, variantes, imposition & marges)
-            </p>
+            <div>
+              <div className="font-serif text-xl font-semibold tracking-tight text-maison-ink leading-none">
+                Maison Mylar
+              </div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-maison-muted font-medium mt-1">
+                Studio Tarifaire Packaging
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation Principale Desktop */}
+          <nav className="hidden md:flex items-center gap-1 bg-maison-stone/60 p-1 rounded-xl border border-maison-border">
+            {[
+              { id: 'configurator', label: 'Configurateur', icon: Sliders },
+              { id: 'tiers', label: 'Paliers & Comparatif', icon: BarChart3 },
+              { id: 'tools', label: 'Outils Atelier (7)', icon: Wrench },
+              { id: 'audit', label: 'Audit Usine', icon: Shield }
+            ].map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id as ActiveTab)}
+                  className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'bg-white text-maison-ink shadow-sm border border-maison-border/70'
+                      : 'text-maison-slate hover:text-maison-ink'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-maison-brass' : ''}`} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Actions Entête : Devise + Aperçu Devis */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="inline-flex rounded-lg bg-white border border-maison-border p-0.5 text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={() => setDisplayCurrency('EUR')}
+                className={`px-2 py-1 rounded-md font-semibold transition-colors ${
+                  displayCurrency === 'EUR' ? 'bg-[#171614] text-white' : 'text-maison-slate'
+                }`}
+              >
+                EUR €
+              </button>
+              <button
+                type="button"
+                onClick={() => setDisplayCurrency('CNY')}
+                className={`px-2 py-1 rounded-md font-semibold transition-colors ${
+                  displayCurrency === 'CNY' ? 'bg-[#171614] text-white' : 'text-maison-slate'
+                }`}
+              >
+                CNY ¥
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setProposalOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#171614] text-white text-xs font-semibold hover:bg-maison-brass transition-colors shadow-sm"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Devis PDF
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs font-semibold">
+        {/* Navigation Mobile Ruban */}
+        <div className="md:hidden border-t border-maison-border bg-maison-canvas px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          {[
+            { id: 'configurator', label: 'Configurateur' },
+            { id: 'tiers', label: 'Paliers' },
+            { id: 'tools', label: 'Outils (7)' },
+            { id: 'audit', label: 'Audit Usine' }
+          ].map((item) => (
             <button
+              key={item.id}
               type="button"
-              onClick={() => setActiveCurrency('EUR')}
-              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${activeCurrency === 'EUR' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'}`}
+              onClick={() => setActiveTab(item.id as ActiveTab)}
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === item.id
+                  ? 'bg-[#171614] text-white'
+                  : 'bg-white border border-maison-border text-maison-slate'
+              }`}
             >
-              € EUR
+              {item.label}
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveCurrency('CNY')}
-              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${activeCurrency === 'CNY' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'}`}
-            >
-              ¥ CNY
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowAdminDetails(!showAdminDetails)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-900/80 text-xs text-slate-300 hover:border-slate-700 cursor-pointer"
-          >
-            {showAdminDetails ? <EyeOff className="w-3.5 h-3.5 text-rose-400" /> : <Lock className="w-3.5 h-3.5 text-amber-400" />}
-            <span className="hidden sm:inline">{showAdminDetails ? 'Masquer Détails Usine' : 'Afficher Détails Usine'}</span>
-          </button>
+          ))}
         </div>
       </header>
 
-      {/* ===================== SECTION 1 : PANNEAUX USINE ORIGINAUX ===================== */}
-      <section className="border-b border-slate-800/80 bg-[#090e1c] px-4 sm:px-6 py-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      {/* ================================================================= */}
+      {/* CONTENU PRINCIPAL                                                 */}
+      {/* ================================================================= */}
+      <main className="no-print max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+        {activeTab === 'configurator' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+            {/* ------------------------------------------------------------- */}
+            {/* COLONNE GAUCHE : STUDIO VISUEL & PARAMÈTRES (7 COLS)          */}
+            {/* ------------------------------------------------------------- */}
+            <div className="lg:col-span-7 space-y-6">
+              <StudioShowcase
+                bagType={bagType}
+                onSelectBagType={handleBagTypeChange}
+                isSingleLayer={isSingleLayer}
+                onToggleSingleLayer={setIsSingleLayer}
+                technology={technology}
+                onSelectTechnology={handleTechChange}
+                widthCm={widthCm}
+                heightCm={heightCm}
+                bottomCm={bottomCm}
+                sideGussetCm={sideGussetCm}
+                hasZip={selectedZipObj.hasZip}
+                quote={quote}
+                presetName={presetObj.name}
+              />
 
-            {/* PANNEAU GAUCHE : Outil de tarification numérique */}
-            <div className={`lg:col-span-5 rounded-2xl border transition-all p-3.5 sm:p-4 ${
-              printTechnology === 'digital'
-                ? 'bg-gradient-to-br from-[#0c1a30] to-[#08101e] border-cyan-500/60 shadow-[0_0_20px_rgba(6,182,212,0.15)] ring-1 ring-cyan-400/50'
-                : 'bg-[#0a0f1d] border-slate-800/80 hover:border-slate-700 opacity-75'
-            }`}>
-              <div
-                className="flex items-center justify-between pb-2 mb-3 border-b border-slate-800/80 cursor-pointer"
-                onClick={() => handleTechnologyChange('digital')}
-              >
-                <h3 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
-                  <span className={printTechnology === 'digital' ? 'text-cyan-300' : 'text-slate-300'}>
-                    Outil de tarification numérique (数码)
-                  </span>
-                  <Info className="w-3.5 h-3.5 text-slate-400" />
-                </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-                  100 à 10 000 pcs • 0 € cliché
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handleBagSelection({ id: 'dig_three_side', tech: 'digital', bagType: 'three_side', hasZip: false })}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                    selectedModelId === 'dig_three_side'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-cyan-400 shrink-0"><ThreeSideBagIcon className="w-5 h-5 sm:w-6 sm:h-6" /></div>
-                  <span className="truncate text-[11px] font-medium">Sac à 3 soudures</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleBagSelection({ id: 'dig_stand_up', tech: 'digital', bagType: 'stand_up', hasZip: false })}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                    selectedModelId === 'dig_stand_up'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-cyan-400 shrink-0"><StandUpBagIcon className="w-5 h-5 sm:w-6 sm:h-6" /></div>
-                  <span className="truncate text-[11px] font-medium">Sac debout (Sans zip)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleBagSelection({ id: 'dig_zipper', tech: 'digital', bagType: 'stand_up', hasZip: true })}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                    selectedModelId === 'dig_zipper'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-cyan-400 shrink-0"><ZipperPouchIcon className="w-5 h-5 sm:w-6 sm:h-6" /></div>
-                  <span className="truncate text-[11px] font-medium">Sachet Zip (Doypack)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleBagSelection({ id: 'dig_gusset', tech: 'digital', bagType: 'gusset', hasZip: false })}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                    selectedModelId === 'dig_gusset'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-cyan-400 shrink-0"><GussetBagIcon className="w-5 h-5 sm:w-6 sm:h-6" /></div>
-                  <span className="truncate text-[11px] font-medium">Sac accordéon</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleBagSelection({ id: 'dig_flat_bottom', tech: 'digital', bagType: 'flat_bottom', hasZip: true })}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                    selectedModelId === 'dig_flat_bottom'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-cyan-400 shrink-0"><FlatBottomBagIcon className="w-5 h-5 sm:w-6 sm:h-6" /></div>
-                  <span className="truncate text-[11px] font-medium">Sac octogonal (8 côtés)</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleBagSelection({ id: 'dig_four_side', tech: 'digital', bagType: 'four_side', hasZip: false })}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                    selectedModelId === 'dig_four_side'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-cyan-400 shrink-0"><FourSideBagIcon className="w-5 h-5 sm:w-6 sm:h-6" /></div>
-                  <span className="truncate text-[11px] font-medium">Sac scellé 4 côtés</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleBagSelection({ id: 'dig_center_seal', tech: 'digital', bagType: 'center_seal', hasZip: false })}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                    selectedModelId === 'dig_center_seal'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-cyan-400 shrink-0"><CenterSealBagIcon className="w-5 h-5 sm:w-6 sm:h-6" /></div>
-                  <span className="truncate text-[11px] font-medium">Sac soudure dos</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleBagSelection({ id: 'dig_roll_film', tech: 'digital', bagType: 'roll_film', hasZip: false })}
-                  className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                    selectedModelId === 'dig_roll_film'
-                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-100 ring-1 ring-cyan-400/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                      : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                  }`}
-                >
-                  <div className="text-cyan-400 shrink-0"><RollFilmIcon className="w-5 h-5 sm:w-6 sm:h-6" /></div>
-                  <span className="truncate text-[11px] font-medium">Film en rouleau</span>
-                </button>
-              </div>
-            </div>
-
-            {/* PANNEAU DROITE : Outil de tarification de gravure */}
-            <div className={`lg:col-span-7 rounded-2xl border transition-all p-3.5 sm:p-4 ${
-              printTechnology === 'gravure'
-                ? 'bg-gradient-to-br from-[#12142e] to-[#0a0d1f] border-indigo-500/60 shadow-[0_0_20px_rgba(99,102,241,0.15)] ring-1 ring-indigo-400/50'
-                : 'bg-[#0a0f1d] border-slate-800/80 hover:border-slate-700 opacity-75'
-            }`}>
-              <div
-                className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 mb-2 border-b border-slate-800/80 gap-1.5 cursor-pointer"
-                onClick={() => handleTechnologyChange('gravure')}
-              >
-                <h3 className="text-xs sm:text-sm font-bold text-slate-100 flex items-center gap-1.5">
-                  <span className={printTechnology === 'gravure' ? 'text-indigo-300' : 'text-slate-300'}>
-                    Outil de tarification de gravure (凹版 Héliogravure)
-                  </span>
-                  <Info className="w-3.5 h-3.5 text-slate-400" />
-                </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
-                  10 000 pcs min • Cylindres cuivre (1 à 10 couleurs)
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4 text-xs font-semibold mb-3 border-b border-slate-800/60 pb-1.5">
-                <button
-                  type="button"
-                  onClick={() => { setGravureTab('composite'); handleTechnologyChange('gravure'); }}
-                  className={`pb-1 transition flex items-center gap-1 cursor-pointer ${
-                    gravureTab === 'composite'
-                      ? 'text-indigo-300 border-b-2 border-orange-500 font-bold'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Sacs composites (复合袋)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setGravureTab('single'); handleTechnologyChange('gravure'); }}
-                  className={`pb-1 transition flex items-center gap-1 cursor-pointer ${
-                    gravureTab === 'single'
-                      ? 'text-indigo-300 border-b-2 border-orange-500 font-bold'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Sac à une seule couche (单层袋)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setGravureTab('tools'); handleTechnologyChange('gravure'); }}
-                  className={`pb-1 transition flex items-center gap-1 cursor-pointer ${
-                    gravureTab === 'tools'
-                      ? 'text-indigo-300 border-b-2 border-orange-500 font-bold'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Outils de calcul & Imposition
-                </button>
-              </div>
-
-              {gravureTab === 'composite' && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => handleBagSelection({ id: 'grv_three_side', tech: 'gravure', bagType: 'three_side', hasZip: false })}
-                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                      selectedModelId === 'grv_three_side'
-                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <div className="text-indigo-400 shrink-0"><ThreeSideBagIcon className="w-5 h-5" /></div>
-                    <span className="truncate text-[11px] font-medium">Sac à 3 soudures</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleBagSelection({ id: 'grv_stand_up', tech: 'gravure', bagType: 'stand_up', hasZip: false })}
-                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                      selectedModelId === 'grv_stand_up'
-                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <div className="text-indigo-400 shrink-0"><StandUpBagIcon className="w-5 h-5" /></div>
-                    <span className="truncate text-[11px] font-medium">Sac debout (Sans zip)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleBagSelection({ id: 'grv_flat_bottom', tech: 'gravure', bagType: 'flat_bottom', hasZip: true })}
-                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                      selectedModelId === 'grv_flat_bottom'
-                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <div className="text-indigo-400 shrink-0"><FlatBottomBagIcon className="w-5 h-5" /></div>
-                    <span className="truncate text-[11px] font-medium">Sac octogonal scellé</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleBagSelection({ id: 'grv_zipper', tech: 'gravure', bagType: 'stand_up', hasZip: true })}
-                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                      selectedModelId === 'grv_zipper'
-                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <div className="text-indigo-400 shrink-0"><ZipperPouchIcon className="w-5 h-5" /></div>
-                    <span className="truncate text-[11px] font-medium">Sachet Zip (Doypack)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleBagSelection({ id: 'grv_gusset', tech: 'gravure', bagType: 'gusset', hasZip: false })}
-                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                      selectedModelId === 'grv_gusset'
-                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <div className="text-indigo-400 shrink-0"><GussetBagIcon className="w-5 h-5" /></div>
-                    <span className="truncate text-[11px] font-medium">Sac accordéon</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleBagSelection({ id: 'grv_center_seal', tech: 'gravure', bagType: 'center_seal', hasZip: false })}
-                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                      selectedModelId === 'grv_center_seal'
-                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <div className="text-indigo-400 shrink-0"><CenterSealBagIcon className="w-5 h-5" /></div>
-                    <span className="truncate text-[11px] font-medium">Sac soudure dos</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleBagSelection({ id: 'grv_four_side', tech: 'gravure', bagType: 'four_side', hasZip: false })}
-                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                      selectedModelId === 'grv_four_side'
-                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <div className="text-indigo-400 shrink-0"><FourSideBagIcon className="w-5 h-5" /></div>
-                    <span className="truncate text-[11px] font-medium">Sac scellé 4 côtés</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleBagSelection({ id: 'grv_roll_film', tech: 'gravure', bagType: 'roll_film', hasZip: false })}
-                    className={`p-2 rounded-xl border flex items-center gap-2.5 transition text-left cursor-pointer ${
-                      selectedModelId === 'grv_roll_film'
-                        ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                    }`}
-                  >
-                    <div className="text-indigo-400 shrink-0"><RollFilmIcon className="w-5 h-5" /></div>
-                    <span className="truncate text-[11px] font-medium">Film en rouleau (auto)</span>
-                  </button>
-                </div>
-              )}
-
-              {/* ONGLET 2 : SACS MONOCOUCHE (0 passe de lamination) */}
-              {gravureTab === 'single' && (
-                <div className="space-y-2.5">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => handleBagSelection({
-                        id: 'grv_single_pe',
-                        tech: 'gravure',
-                        bagType: 'three_side',
-                        hasZip: false,
-                        singleLayerPrintId: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMM5A1' // PE85
-                      })}
-                      className={`p-2.5 rounded-xl border flex items-center gap-2 transition text-left cursor-pointer ${
-                        selectedModelId === 'grv_single_pe'
-                          ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60'
-                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 text-slate-300'
-                      }`}
-                    >
-                      <ThreeSideBagIcon className="w-5 h-5 text-indigo-400 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="block font-medium text-[11px] truncate">Sachet PE Pur</span>
-                        <span className="text-[9px] text-emerald-400">0 ¥ Lamination</span>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleBagSelection({
-                        id: 'grv_single_opp',
-                        tech: 'gravure',
-                        bagType: 'three_side',
-                        hasZip: false,
-                        singleLayerPrintId: 'FINST-ZLE66OD1IRJ4IT7KJN96B8XOM0AK2UODRSMNMWSV1' // BOPP25
-                      })}
-                      className={`p-2.5 rounded-xl border flex items-center gap-2 transition text-left cursor-pointer ${
-                        selectedModelId === 'grv_single_opp'
-                          ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60'
-                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 text-slate-300'
-                      }`}
-                    >
-                      <ThreeSideBagIcon className="w-5 h-5 text-indigo-400 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="block font-medium text-[11px] truncate">Sachet BOPP 25µm</span>
-                        <span className="text-[9px] text-emerald-400">Monocouche clair</span>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleBagSelection({
-                        id: 'grv_single_roll',
-                        tech: 'gravure',
-                        bagType: 'roll_film',
-                        hasZip: false,
-                        singleLayerPrintId: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMM5A1' // PE85
-                      })}
-                      className={`p-2.5 rounded-xl border flex items-center gap-2 transition text-left cursor-pointer ${
-                        selectedModelId === 'grv_single_roll'
-                          ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60'
-                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 text-slate-300'
-                      }`}
-                    >
-                      <RollFilmIcon className="w-5 h-5 text-indigo-400 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="block font-medium text-[11px] truncate">Gaine / Bobine PE</span>
-                        <span className="text-[9px] text-emerald-400">Ensachage direct</span>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleBagSelection({
-                        id: 'grv_single_kraft',
-                        tech: 'gravure',
-                        bagType: 'three_side',
-                        hasZip: false,
-                        singleLayerPrintId: 'FINST-HOE66X61EH24X6HEL84R97M96ASB301QNZTMMQ87' // Kraft50g
-                      })}
-                      className={`p-2.5 rounded-xl border flex items-center gap-2 transition text-left cursor-pointer ${
-                        selectedModelId === 'grv_single_kraft'
-                          ? 'bg-indigo-500/25 border-indigo-400 text-indigo-100 ring-1 ring-indigo-400/60'
-                          : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 text-slate-300'
-                      }`}
-                    >
-                      <ThreeSideBagIcon className="w-5 h-5 text-amber-400 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="block font-medium text-[11px] truncate">Kraft Pur 50g</span>
-                        <span className="text-[9px] text-amber-400">100% Papier Bio</span>
-                      </div>
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-slate-400 bg-slate-900/80 p-2 rounded-lg border border-slate-800">
-                    💡 <strong>Mode Monocouche (1 seule couche active, 0 passe de contrecollage)</strong> : Supprime intégralement le coût de lamination (`js_fh = 0 ¥`).
-                  </p>
-                </div>
-              )}
-
-              {/* ONGLET 3 : OUTILS DE CALCUL & IMPOSITION ATELIER */}
-              {gravureTab === 'tools' && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                    <span className="font-bold text-indigo-300 flex items-center gap-1.5 mb-1.5">
-                      <Ruler className="w-4 h-4 text-indigo-400" />
-                      <span>Imposition Bobine 760mm</span>
-                    </span>
-                    <div className="space-y-1 font-mono text-[11px] text-slate-300">
-                      <div>Poses Laize/Cyl : <span className="text-cyan-300">{quote.imposition.webPoses} × {quote.imposition.cylinderPoses} poses</span></div>
-                      <div>Tours machine : <span className="text-cyan-300">{quote.imposition.totalRotations.toLocaleString('fr-FR')} tours</span></div>
-                      <div>Métrage film : <span className="text-cyan-300">{quote.imposition.linearMeters} m ({quote.imposition.totalFilmSqm} m²)</span></div>
+              {/* BLOC 1 : DIMENSIONS, QUANTITÉS & FAÇONNAGE */}
+              <section className="bg-white border border-maison-border rounded-2xl p-5 sm:p-6 shadow-atelier space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-maison-brassLight flex items-center justify-center text-maison-brass">
+                      <Package className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-maison-ink">
+                        1 · Gabarit, Volumétrie & Fermeture
+                      </h3>
+                      <p className="text-xs text-maison-muted">
+                        Cotes finies extérieures et paramètres d'impression
+                      </p>
                     </div>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                    <span className="font-bold text-indigo-300 flex items-center gap-1.5 mb-1.5">
-                      <Scale className="w-4 h-4 text-indigo-400" />
-                      <span>Poids & Déroulage</span>
-                    </span>
-                    <div className="space-y-1 font-mono text-[11px] text-slate-300">
-                      <div>Poids unitaire : <span className="text-amber-300">{quote.weightUnitGrams.toFixed(2)} g/sac</span></div>
-                      <div>Poids total : <span className="text-amber-300">{quote.weightTotalKg} kg</span></div>
-                      <div>Déroulage : <span className="text-emerald-300">{quote.imposition.unwindingMode}</span></div>
+                  {bagType !== 'roll_film' && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {FORMAT_PRESETS.map((p) => (
+                        <button
+                          key={p.label}
+                          type="button"
+                          onClick={() => {
+                            setWidthCm(p.w);
+                            setHeightCm(p.h);
+                            setBottomCm(p.b);
+                            setSideGussetCm(p.b);
+                          }}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-maison-canvas border border-maison-border text-maison-slate hover:border-maison-brass hover:text-maison-ink transition-colors"
+                        >
+                          {p.label}
+                        </button>
+                      ))}
                     </div>
-                  </div>
+                  )}
+                </div>
 
-                  <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                    <span className="font-bold text-indigo-300 flex items-center gap-1.5 mb-1.5">
-                      <Layers className="w-4 h-4 text-indigo-400" />
-                      <span>Lamination & Cylindres</span>
+                {/* Grille Dimensions */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-maison-slate">
+                      {bagType === 'roll_film' ? 'Laize coupe (cm)' : 'Largeur (cm)'}
                     </span>
-                    <div className="space-y-1 font-mono text-[11px] text-slate-300">
-                      <div>Passes colle : <span className="text-purple-300">{quote.imposition.laminationPasses} passe(s) ({quote.imposition.activeLayersCount} couches)</span></div>
-                      <div>Épaisseur : <span className="text-purple-300">{quote.imposition.actualThicknessSilk} 丝 ({quote.imposition.actualThicknessMicrons} µm)</span></div>
-                      <div>Cylindres cuivre : <span className="text-rose-300">{quote.cylinderCount} ({quote.cylindersCostCny} ¥)</span></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ===================== ONGLETS MOBILE (SMARTPHONE) ===================== */}
-      <div className="sm:hidden border-b border-slate-800 bg-[#090f1d] px-2 py-2 flex items-center justify-between text-[11px] font-semibold sticky top-[57px] z-40">
-        <button
-          type="button"
-          onClick={() => setMobileTab('config')}
-          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
-            mobileTab === 'config' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400'
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5" />
-          <span>Config & Film</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileTab('finishes')}
-          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
-            mobileTab === 'finishes' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'text-slate-400'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Finitions</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileTab('pricing')}
-          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
-            mobileTab === 'pricing' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400'
-          }`}
-        >
-          <DollarSign className="w-3.5 h-3.5" />
-          <span>Tarifs & Devis</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileTab('charts')}
-          className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1 transition cursor-pointer ${
-            mobileTab === 'charts' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'text-slate-400'
-          }`}
-        >
-          <BarChart3 className="w-3.5 h-3.5" />
-          <span>Paliers</span>
-        </button>
-      </div>
-
-      {/* ===================== CORPS PRINCIPAL DU DASHBOARD ===================== */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-        {/* ===================== COLONNE GAUCHE : CONFIGURATEUR COMPLET USINE ===================== */}
-        <div className={`lg:col-span-5 space-y-4 ${
-          mobileTab === 'config' || mobileTab === 'finishes' ? 'block' : 'hidden sm:block'
-        }`}>
-
-          {/* BLOC 1 : DIMENSIONS, QUANTITÉ, VARIANTES (款数), ZIP, DÉCOUPE (双切/模切) & FOND (底部方式) */}
-          <div className={`${mobileTab === 'finishes' ? 'hidden sm:block' : 'block'} bg-[#0c1322] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4`}>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-              <span className="text-xs font-bold text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                <Box className="w-4 h-4 text-cyan-400" />
-                <span>1. Format & Confection : {currentBagDef.nameFr}</span>
-              </span>
-              <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/30">
-                {dimensions.widthCm}×{dimensions.heightCm}{currentBagDef.hasBottomGusset ? `+${dimensions.bottomCm}` : ''} cm
-              </span>
-            </div>
-
-            {/* Alerte si sac dépasse la laize machine */}
-            {!quote.imposition.isSizeValid && (
-              <div className="p-2.5 rounded-xl bg-rose-500/15 border border-rose-500/40 flex items-center gap-2 text-xs text-rose-200">
-                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                <span><strong>Attention Usine (`袋型过大`) :</strong> La hauteur développée dépasse la laize utile de 74 cm. Réduisez la hauteur ou passez en mode Fond séparé (2 ou 3 bobines).</span>
-              </div>
-            )}
-
-            {/* Dimensions L x H x Fond/Soufflet */}
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <span className="text-[10px] text-slate-400 block mb-1">Largeur (宽 cm)</span>
-                <input
-                  type="number"
-                  min="4"
-                  max="70"
-                  step="0.5"
-                  value={dimensions.widthCm}
-                  onChange={e => handleDimChange('widthCm', parseFloat(e.target.value) || 4)}
-                  className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-sm text-cyan-300 font-mono focus:border-cyan-400 outline-none"
-                />
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block mb-1">Hauteur (高 cm)</span>
-                <input
-                  type="number"
-                  min="5"
-                  max="80"
-                  step="0.5"
-                  value={dimensions.heightCm}
-                  onChange={e => handleDimChange('heightCm', parseFloat(e.target.value) || 5)}
-                  className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-sm text-cyan-300 font-mono focus:border-cyan-400 outline-none"
-                />
-              </div>
-              {currentBagDef.hasBottomGusset ? (
-                <div>
-                  <span className="text-[10px] text-slate-400 block mb-1">Fond / Soufflet (底 cm)</span>
-                  <input
-                    type="number"
-                    min="2"
-                    max="25"
-                    step="0.5"
-                    value={dimensions.bottomCm}
-                    onChange={e => {
-                      const val = parseFloat(e.target.value) || 2;
-                      handleDimChange('bottomCm', val);
-                      handleDimChange('sideGussetCm', val);
-                    }}
-                    className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-sm text-cyan-300 font-mono focus:border-cyan-400 outline-none"
-                  />
-                </div>
-              ) : currentBagDef.hasSideGusset ? (
-                <div>
-                  <span className="text-[10px] text-slate-400 block mb-1">Soufflet Côté (风琴 cm)</span>
-                  <input
-                    type="number"
-                    min="2"
-                    max="25"
-                    step="0.5"
-                    value={dimensions.sideGussetCm || 4}
-                    onChange={e => handleDimChange('sideGussetCm', parseFloat(e.target.value) || 2)}
-                    className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-sm text-cyan-300 font-mono focus:border-cyan-400 outline-none"
-                  />
-                </div>
-              ) : (
-                <div>
-                  <span className="text-[10px] text-slate-500 block mb-1">Soufflet</span>
-                  <div className="w-full bg-[#080d18]/50 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-slate-500">
-                    Sans (Plat 2D)
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Quantité totale + Nombre de modèles / designs (款数 gg_ks) */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
-              <div className="sm:col-span-8">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-slate-300">Quantité totale (总数量) :</span>
-                  <div className="flex items-center gap-1.5">
                     <input
                       type="number"
-                      min="100"
-                      max="500000"
-                      step="100"
-                      value={dimensions.quantity}
-                      onChange={e => handleDimChange('quantity', Math.max(100, parseInt(e.target.value) || 100))}
-                      className="w-24 bg-[#080d18] border border-cyan-500/40 rounded-lg px-2 py-0.5 text-xs font-mono font-bold text-cyan-300 text-right outline-none"
+                      min={3}
+                      max={100}
+                      step="0.5"
+                      value={widthCm}
+                      onChange={e => setWidthCm(Math.max(1, Number(e.target.value)))}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-maison-border bg-maison-canvas/40 font-mono text-sm font-semibold text-maison-ink focus:outline-none focus:border-maison-brass"
                     />
-                    <span className="text-[10px] text-slate-400">pcs</span>
-                  </div>
-                </div>
-                <input
-                  type="range"
-                  min={printTechnology === 'gravure' ? 5000 : 100}
-                  max={printTechnology === 'gravure' ? 100000 : 15000}
-                  step={printTechnology === 'gravure' ? 2500 : 100}
-                  value={dimensions.quantity}
-                  onChange={e => handleDimChange('quantity', parseInt(e.target.value))}
-                  className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                />
-              </div>
-
-              <div className="sm:col-span-4">
-                <span className="text-[10px] text-slate-400 block mb-1">Nb Designs / Parfums (款数)</span>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="number"
-                    min="1"
-                    max="50"
-                    value={dimensions.skuCount || 1}
-                    onChange={e => handleDimChange('skuCount', Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1 text-sm text-amber-300 font-mono outline-none focus:border-amber-400"
-                  />
-                </div>
-                {(dimensions.skuCount || 1) > 1 && (
-                  <span className="text-[9px] text-amber-400/90 block mt-0.5">
-                    Soit {Math.round(dimensions.quantity / (dimensions.skuCount || 1))} pcs / design
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Type de Fermeture Zip (拉链类型 dxcs) & Type de Découpe (双切 vs 模切) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-slate-800/80">
-              <div>
-                <label className="text-[10px] text-slate-400 block mb-1">Type de Fermeture Zip (拉链类型) :</label>
-                <select
-                  value={dimensions.zipperInstId || currentBagDef.zipperOptions[0].instId}
-                  onChange={e => handleZipSelect(e.target.value)}
-                  className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-cyan-200 outline-none focus:border-cyan-400"
-                >
-                  {currentBagDef.zipperOptions.map(z => (
-                    <option key={z.instId} value={z.instId}>
-                      {z.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] text-slate-400 block mb-1 flex items-center gap-1">
-                  <Scissors className="w-3 h-3 text-rose-400" />
-                  <span>Type de Découpe (切袋方式) :</span>
-                </label>
-                <select
-                  value={dimensions.cuttingType || 'double_cut'}
-                  onChange={e => handleDimChange('cuttingType', e.target.value as CuttingType)}
-                  className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-rose-200 outline-none focus:border-rose-400"
-                >
-                  <option value="double_cut">Coupe Droite Classique (双切 - 0 ¥ moule)</option>
-                  <option value="die_cut">Découpe Forme Spéciale / Die-Cut (模切/异形袋 +450 ¥)</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Mode de Construction du Fond (底部方式 kg_dbfs 1 à 5) */}
-            <div>
-              <label className="text-[10px] text-slate-400 block mb-1">
-                Mode de Construction du Fond & Bobines (底部方式 / 放料) :
-              </label>
-              <select
-                value={dimensions.bottomMode || currentBagDef.defaultBottomMode}
-                onChange={e => handleDimChange('bottomMode', parseInt(e.target.value) as BottomMode)}
-                className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 outline-none focus:border-cyan-400"
-              >
-                {BOTTOM_MODES_CATALOG.map(m => (
-                  <option key={m.value} value={m.value}>
-                    {m.labelFr}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* SÉLECTEUR DE STRUCTURE FILMS & BARRIÈRE (25 Presets + Constructeur 5 Couches) */}
-            <div className="space-y-2.5 pt-3 border-t border-slate-800/80">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>2. Structure Matériaux (Jusqu'à 5 Couches) :</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsCustomStructure(!isCustomStructure);
-                    setCustomLayers(prev => ({ ...prev, isSingleLayer: false }));
-                  }}
-                  className={`text-[10px] px-2.5 py-0.5 rounded-full border transition flex items-center gap-1 cursor-pointer ${
-                    isCustomStructure
-                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 font-bold'
-                      : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-cyan-300'
-                  }`}
-                >
-                  <Settings2 className="w-3 h-3" />
-                  <span>{isCustomStructure ? 'Revenir aux 25 Structures' : 'Composer 1 à 5 Couches'}</span>
-                </button>
-              </div>
-
-              {!isCustomStructure ? (
-                <div className="space-y-1.5">
-                  <select
-                    value={dimensions.materialPreset}
-                    onChange={e => {
-                      setCustomLayers(prev => ({ ...prev, isSingleLayer: false }));
-                      handleDimChange('materialPreset', e.target.value);
-                    }}
-                    className="w-full bg-[#080d18] border border-cyan-500/40 rounded-xl px-3 py-2 text-xs text-slate-100 font-medium outline-none focus:border-cyan-400"
-                  >
-                    {Object.entries(structureCategories).map(([category, items]) => (
-                      <optgroup key={category} label={`━━━ ${category.toUpperCase()} ━━━`}>
-                        {items.map(item => (
-                          <option key={item.key} value={item.key}>
-                            {item.name} — {item.silk}丝 ({Math.round(item.silk * 10)}µm) {item.badge ? `[${item.badge}]` : ''}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 px-1">
-                    <span>Structure active : <strong className="text-cyan-300">{quote.imposition.layersSummaryZh}</strong></span>
-                    <span>Lamination : <strong className="text-purple-300">{quote.imposition.laminationPasses} passe(s) ({quote.imposition.activeLayersCount} couches)</strong></span>
-                  </div>
-                </div>
-              ) : (
-                /* Constructeur Sur-Mesure 1 à 5 Couches (ysc01, zgc01, zgc02, zgc03, rfc01) */
-                <div className="p-3 bg-slate-900/95 rounded-xl border border-cyan-500/40 space-y-2 text-xs">
-                  <div className="flex items-center justify-between text-[10px] text-cyan-300 pb-1 border-b border-slate-800">
-                    <span className="font-bold">Constructeur Usine 5 Couches (`clk` 50 films)</span>
-                    <span className="font-mono">{quote.imposition.actualThicknessSilk}丝 ({quote.imposition.actualThicknessMicrons}µm) • {quote.imposition.laminationPasses} passe(s)</span>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] text-slate-400 block mb-0.5">Couche 1 — Impression Extérieure (`印刷层 ysc01`) :</span>
-                    <select
-                      value={customLayers.printLayerId}
-                      onChange={e => setCustomLayers(prev => ({ ...prev, printLayerId: e.target.value }))}
-                      className="w-full bg-[#080d18] border border-slate-700 rounded-lg p-1.5 text-xs text-cyan-300 outline-none"
-                    >
-                      {PRINT_LAYERS.map(m => (
-                        <option key={m.id} value={m.id}>
-                          {m.code} — {m.nameFr} ({m.pricePerKgCny} ¥/kg)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] text-slate-400 block mb-0.5">Couche 2 — Barrière 1 (`阻隔层1 zgc01`) :</span>
-                    <select
-                      value={customLayers.barrierLayerId || 'none'}
-                      onChange={e => setCustomLayers(prev => ({ ...prev, barrierLayerId: e.target.value === 'none' ? null : e.target.value }))}
-                      className="w-full bg-[#080d18] border border-slate-700 rounded-lg p-1.5 text-xs text-indigo-300 outline-none"
-                    >
-                      <option value="none">Aucune (Structure 2 couches)</option>
-                      {BARRIER_LAYERS.map(m => (
-                        <option key={m.id} value={m.id}>
-                          {m.code} — {m.nameFr} ({m.pricePerKgCny} ¥/kg)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] text-slate-400 block mb-0.5">Couche 3 — Barrière 2 Optionnelle (`阻隔层2 zgc02` - 4 couches) :</span>
-                    <select
-                      value={customLayers.barrierLayer2Id || 'none'}
-                      onChange={e => setCustomLayers(prev => ({ ...prev, barrierLayer2Id: e.target.value === 'none' ? null : e.target.value }))}
-                      className="w-full bg-[#080d18] border border-slate-700 rounded-lg p-1.5 text-xs text-purple-300 outline-none"
-                    >
-                      <option value="none">Aucune</option>
-                      {BARRIER_LAYERS.map(m => (
-                        <option key={m.id} value={m.id}>
-                          {m.code} — {m.nameFr} ({m.pricePerKgCny} ¥/kg)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] text-slate-400 block mb-0.5">Couche 4 — Barrière 3 Optionnelle (`阻隔层3 zgc03` - 5 couches) :</span>
-                    <select
-                      value={customLayers.barrierLayer3Id || 'none'}
-                      onChange={e => setCustomLayers(prev => ({ ...prev, barrierLayer3Id: e.target.value === 'none' ? null : e.target.value }))}
-                      className="w-full bg-[#080d18] border border-slate-700 rounded-lg p-1.5 text-xs text-pink-300 outline-none"
-                    >
-                      <option value="none">Aucune</option>
-                      {BARRIER_LAYERS.map(m => (
-                        <option key={m.id} value={m.id}>
-                          {m.code} — {m.nameFr} ({m.pricePerKgCny} ¥/kg)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] text-slate-400 block mb-0.5">Couche 5 — Scellage Thermique Intérieur (`热封层 rfc01`) :</span>
-                    <select
-                      value={customLayers.sealLayerId || 'none'}
-                      onChange={e => setCustomLayers(prev => ({
-                        ...prev,
-                        sealLayerId: e.target.value === 'none' ? null : e.target.value,
-                        isSingleLayer: e.target.value === 'none'
-                      }))}
-                      className="w-full bg-[#080d18] border border-slate-700 rounded-lg p-1.5 text-xs text-emerald-300 outline-none"
-                    >
-                      <option value="none">Aucune (Sac Monocouche sans contrecollage)</option>
-                      {SEAL_LAYERS.map(m => (
-                        <option key={m.id} value={m.id}>
-                          {m.code} — {m.nameFr} ({m.pricePerKgCny} ¥/kg)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* MODE D'IMPRESSION (Numérique ys01 vs Héliogravure 0-10 couleurs) */}
-            <div className="pt-2 border-t border-slate-800/80">
-              {printTechnology === 'digital' ? (
-                <div>
-                  <label className="text-[10px] text-slate-400 block mb-1 flex items-center gap-1">
-                    <Palette className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Mode d'Impression Numérique (`印刷方式 ys01`) :</span>
                   </label>
-                  <select
-                    value={dimensions.digitalPrintMode || 'cmyk_white'}
-                    onChange={e => handleDimChange('digitalPrintMode', e.target.value as DigitalPrintMode)}
-                    className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-cyan-200 outline-none focus:border-cyan-400"
-                  >
-                    <option value="cmyk_white">CMJN + Blanc Standard (CMYK单白 : 2.70 ¥/tour, min 100 ¥)</option>
-                    <option value="cmyk_white_inside">CMJN + Blanc + Impression Interne Recto/Verso (CMYK单白+里印 : 5.35 ¥/tour)</option>
-                    <option value="none">Sans Impression / Sachet Neutre (不印刷 : 0 ¥)</option>
-                  </select>
-                </div>
-              ) : (
-                <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-indigo-300 font-semibold flex items-center gap-1">
-                      <Palette className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Couleurs & Cylindres Hélio (`凹版印刷`) :</span>
+
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-maison-slate">
+                      {bagType === 'roll_film' ? 'Pas répétition (cm)' : 'Hauteur (cm)'}
                     </span>
-                    <span className="font-mono font-bold text-amber-300">
-                      {dimensions.cylinderCount ?? 6} coul. ({(dimensions.cylinderCount ?? 6) * 400} ¥ clichés)
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    step="1"
-                    value={dimensions.cylinderCount ?? 6}
-                    onChange={e => handleDimChange('cylinderCount', parseInt(e.target.value))}
-                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-400"
-                  />
-                  <div className="flex items-center justify-between text-[10px] text-slate-400">
-                    <span>Calage : {(dimensions.cylinderCount ?? 6) * 200} ¥ + Encre au m²</span>
-                    <label className="flex items-center gap-1.5 text-indigo-200 cursor-pointer">
+                    <input
+                      type="number"
+                      min={4}
+                      max={100}
+                      step="0.5"
+                      value={heightCm}
+                      onChange={e => setHeightCm(Math.max(1, Number(e.target.value)))}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-maison-border bg-maison-canvas/40 font-mono text-sm font-semibold text-maison-ink focus:outline-none focus:border-maison-brass"
+                    />
+                  </label>
+
+                  {activeBagDef.hasBottomGusset && (
+                    <label className="space-y-1.5">
+                      <span className="text-xs font-medium text-maison-slate">Soufflet fond (cm)</span>
                       <input
-                        type="checkbox"
-                        checked={finishesState.fullInkCoverage}
-                        onChange={() => toggleFinish('fullInkCoverage')}
-                        className="accent-indigo-400"
+                        type="number"
+                        min={0}
+                        max={30}
+                        step="0.5"
+                        value={bottomCm}
+                        onChange={e => setBottomCm(Math.max(0, Number(e.target.value)))}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-maison-border bg-maison-canvas/40 font-mono text-sm font-semibold text-maison-ink focus:outline-none focus:border-maison-brass"
                       />
-                      <span>Plein encrage (`满版印刷`)</span>
+                    </label>
+                  )}
+
+                  {activeBagDef.hasSideGusset && (
+                    <label className="space-y-1.5">
+                      <span className="text-xs font-medium text-maison-slate">Soufflet latéral (cm)</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={30}
+                        step="0.5"
+                        value={sideGussetCm}
+                        onChange={e => setSideGussetCm(Math.max(0, Number(e.target.value)))}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-maison-border bg-maison-canvas/40 font-mono text-sm font-semibold text-maison-ink focus:outline-none focus:border-maison-brass"
+                      />
+                    </label>
+                  )}
+
+                  <label className="space-y-1.5">
+                    <span className="text-xs font-medium text-maison-slate">Visuels / SKU</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={skuCount}
+                      onChange={e => setSkuCount(Math.max(1, Math.round(Number(e.target.value))))}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-maison-border bg-maison-canvas/40 font-mono text-sm font-semibold text-maison-ink focus:outline-none focus:border-maison-brass"
+                    />
+                  </label>
+                </div>
+
+                {/* Volume & Quantité (avec mode bobine mètres/kg si roll_film) */}
+                <div className="bg-maison-canvas/60 border border-maison-border rounded-xl p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-maison-ink">
+                      {bagType === 'roll_film' ? 'Mode de Chiffrage Bobine' : 'Quantité Totale Commandée'}
+                    </span>
+
+                    {bagType === 'roll_film' ? (
+                      <div className="inline-flex rounded-lg bg-white border border-maison-border p-0.5 text-[11px] font-semibold">
+                        {(['pcs', 'meters', 'kg'] as const).map(m => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setRollQuoteMode(m)}
+                            className={`px-2.5 py-1 rounded-md ${rollQuoteMode === m ? 'bg-[#171614] text-white' : 'text-maison-slate'}`}
+                          >
+                            {m === 'pcs' ? 'Nb Coupes' : m === 'meters' ? 'Métrage (m)' : 'Poids (kg)'}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {(technology === 'digital' ? [500, 1000, 2500, 5000, 10000] : [10000, 20000, 50000, 100000]).map((q) => (
+                          <button
+                            key={q}
+                            type="button"
+                            onClick={() => setQuantity(q)}
+                            className={`px-2.5 py-1 rounded-lg font-mono text-[11px] font-semibold transition-colors ${
+                              quantity === q
+                                ? 'bg-[#171614] text-white'
+                                : 'bg-white border border-maison-border text-maison-slate hover:text-maison-ink'
+                            }`}
+                          >
+                            {q >= 1000 ? `${q / 1000}k` : q}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {bagType === 'roll_film' && rollQuoteMode === 'meters' ? (
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min={100}
+                        step={100}
+                        value={rollTargetMeters}
+                        onChange={e => setRollTargetMeters(Math.max(50, Number(e.target.value)))}
+                        className="w-40 px-3.5 py-2 rounded-xl border border-maison-border bg-white font-mono text-base font-semibold text-maison-ink"
+                      />
+                      <span className="text-xs text-maison-slate font-mono">
+                        mètres linéaires (≈ {quote.resolvedQuantity.toLocaleString('fr-FR')} poses)
+                      </span>
+                    </div>
+                  ) : bagType === 'roll_film' && rollQuoteMode === 'kg' ? (
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min={10}
+                        step={10}
+                        value={rollTargetKg}
+                        onChange={e => setRollTargetKg(Math.max(1, Number(e.target.value)))}
+                        className="w-40 px-3.5 py-2 rounded-xl border border-maison-border bg-white font-mono text-base font-semibold text-maison-ink"
+                      />
+                      <span className="text-xs text-maison-slate font-mono">
+                        kg de film (≈ {quote.resolvedQuantity.toLocaleString('fr-FR')} poses)
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <input
+                        type="number"
+                        min={100}
+                        step={100}
+                        value={quantity}
+                        onChange={e => setQuantity(Math.max(100, Number(e.target.value)))}
+                        className="w-full sm:w-44 px-3.5 py-2 rounded-xl border border-maison-border bg-white font-mono text-base font-semibold text-maison-ink focus:outline-none focus:border-maison-brass"
+                      />
+                      <input
+                        type="range"
+                        min={technology === 'digital' ? 250 : 5000}
+                        max={technology === 'digital' ? 15000 : 120000}
+                        step={technology === 'digital' ? 250 : 1000}
+                        value={quantity}
+                        onChange={e => setQuantity(Number(e.target.value))}
+                        className="atelier-slider flex-1"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Sélecteur Fermeture Zip + Découpe + Impression */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-maison-border">
+                  <div>
+                    <span className="text-xs font-semibold text-maison-ink block mb-2">Type de fermeture / Zip</span>
+                    <div className="space-y-1.5">
+                      {activeBagDef.zipperOptions.map((z) => (
+                        <button
+                          key={z.instId}
+                          type="button"
+                          onClick={() => setZipperInstId(z.instId)}
+                          className={`w-full px-3 py-2 rounded-xl border text-left text-xs font-medium transition-all flex items-center justify-between ${
+                            zipperInstId === z.instId
+                              ? 'border-[#171614] bg-maison-canvas text-maison-ink font-semibold'
+                              : 'border-maison-border bg-white text-maison-slate hover:border-maison-borderStrong'
+                          }`}
+                        >
+                          <span>{z.labelFr}</span>
+                          {zipperInstId === z.instId && <Check className="w-3.5 h-3.5 text-maison-brass shrink-0" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-xs font-semibold text-maison-ink block mb-2">Découpe du contour</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCuttingType('double_cut')}
+                          className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                            cuttingType === 'double_cut'
+                              ? 'border-[#171614] bg-[#171614] text-white'
+                              : 'border-maison-border bg-white text-maison-slate'
+                          }`}
+                        >
+                          Coupe Droite
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCuttingType('die_cut')}
+                          className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                            cuttingType === 'die_cut'
+                              ? 'border-[#171614] bg-[#171614] text-white'
+                              : 'border-maison-border bg-white text-maison-slate'
+                          }`}
+                        >
+                          Forme Spéciale
+                        </button>
+                      </div>
+                    </div>
+
+                    {bagType === 'four_side' && (
+                      <div>
+                        <span className="text-xs font-semibold text-maison-ink block mb-2">Sens sortie machine (Quad Seal)</span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setFourSideOrientation('vertical')}
+                            className={`px-3 py-2 rounded-xl border text-xs font-semibold ${
+                              fourSideOrientation === 'vertical' ? 'border-[#171614] bg-maison-canvas text-maison-ink' : 'border-maison-border bg-white text-maison-slate'
+                            }`}
+                          >
+                            Sortie Verticale
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFourSideOrientation('horizontal')}
+                            className={`px-3 py-2 rounded-xl border text-xs font-semibold ${
+                              fourSideOrientation === 'horizontal' ? 'border-[#171614] bg-maison-canvas text-maison-ink' : 'border-maison-border bg-white text-maison-slate'
+                            }`}
+                          >
+                            Sortie Horizontale
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {(bagType === 'stand_up' || bagType === 'flat_bottom') && (
+                      <div>
+                        <span className="text-xs font-semibold text-maison-ink block mb-1.5">Assemblage du fond</span>
+                        <select
+                          value={bottomMode}
+                          onChange={e => setBottomMode(Number(e.target.value) as BottomMode)}
+                          className="w-full px-3 py-2 rounded-xl border border-maison-border bg-white text-xs font-medium text-maison-ink"
+                        >
+                          {BOTTOM_MODES_CATALOG.map((m) => (
+                            <option key={m.value} value={m.value}>{m.labelFr}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Paramètres Spécifiques Filière (Numérique CMJN vs Héliogravure Cylindres) */}
+                <div className="pt-4 border-t border-maison-border">
+                  {technology === 'digital' ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Printer className="w-4 h-4 text-maison-emerald" />
+                        <span className="text-xs font-semibold text-maison-ink">Passes d'impression Numérique</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          { key: 'none', label: 'Neutre sans impression' },
+                          { key: 'cmyk_white', label: 'CMJN + Blanc couvrant' },
+                          { key: 'cmyk_white_inside', label: 'Recto/Verso + Intérieur' }
+                        ].map((m) => (
+                          <button
+                            key={m.key}
+                            type="button"
+                            onClick={() => setDigitalPrintMode(m.key as DigitalPrintMode)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                              digitalPrintMode === m.key
+                                ? 'bg-[#171614] text-white'
+                                : 'bg-maison-canvas border border-maison-border text-maison-slate hover:text-maison-ink'
+                            }`}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-maison-brassLight/45 border border-[#E3D2B4] rounded-xl p-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <span className="text-xs font-semibold text-maison-ink">Cylindres Cuivre Héliogravure</span>
+                          <p className="text-[11px] text-maison-slate">
+                            1 cylindre par couleur CMJN/Pantone/Blanc · {quote.imposition.singleCylinderCostCny} ¥ / cylindre (Ø {quote.imposition.cylinderCircumferenceCm} cm)
+                          </p>
+                        </div>
+                        <span className="font-mono text-sm font-semibold text-maison-brass tabular-nums">
+                          {cylinderCount} couleur{cylinderCount > 1 ? 's' : ''} ({(quote.cylindersCostCny * CNY_TO_EUR_RATE).toFixed(0)} €)
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={0}
+                        max={10}
+                        step={1}
+                        value={cylinderCount}
+                        onChange={e => setCylinderCount(Number(e.target.value))}
+                        className="atelier-slider w-full"
+                      />
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* BLOC 2 : STRUCTURE MATIÈRE & BARRIÈRE */}
+              <section className="bg-white border border-maison-border rounded-2xl p-5 sm:p-6 shadow-atelier space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-maison-brassLight flex items-center justify-center text-maison-brass">
+                      <Layers className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-maison-ink">
+                        2 · Complexe Matière & Barrière Protectrice
+                      </h3>
+                      <p className="text-xs text-maison-muted">
+                        {isSingleLayer
+                          ? 'Mode Monocouche actif (sélectionnez le film mono-matériau ci-dessous)'
+                          : 'Structures éprouvées en atelier ou composition libre jusqu’à 4 films'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!isSingleLayer && (
+                    <button
+                      type="button"
+                      onClick={() => setUseCustomLayers(!useCustomLayers)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                        useCustomLayers
+                          ? 'bg-[#171614] text-white border-[#171614]'
+                          : 'bg-maison-canvas text-maison-ink border-maison-border hover:border-maison-brass'
+                      }`}
+                    >
+                      {useCustomLayers ? 'Revenir aux Préréglages' : 'Composer Sur-Mesure'}
+                    </button>
+                  )}
+                </div>
+
+                {isSingleLayer ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {PRINT_LAYERS.map((layer) => (
+                      <button
+                        key={layer.id}
+                        type="button"
+                        onClick={() => setCustomPrintLayerId(layer.id)}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          customPrintLayerId === layer.id
+                            ? 'border-[#171614] bg-maison-canvas ring-1 ring-[#171614]'
+                            : 'border-maison-border bg-white hover:border-maison-borderStrong'
+                        }`}
+                      >
+                        <div className="text-xs font-semibold text-maison-ink">{layer.nameFr}</div>
+                        <div className="text-[11px] font-mono text-maison-muted mt-0.5">
+                          {layer.thicknessUm} µm · Densité {layer.density} g/cm³
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : useCustomLayers ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-maison-canvas/50 p-4 rounded-xl border border-maison-border">
+                    <label className="space-y-1 text-xs">
+                      <span className="font-semibold text-maison-slate">Couche 1 · Impression Extérieure</span>
+                      <select
+                        value={customPrintLayerId}
+                        onChange={e => setCustomPrintLayerId(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-maison-border bg-white text-xs font-medium"
+                      >
+                        {PRINT_LAYERS.map(l => <option key={l.id} value={l.id}>{l.nameFr}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-xs">
+                      <span className="font-semibold text-maison-slate">Couche 2 · Barrière Principale</span>
+                      <select
+                        value={customBarrier1Id || ''}
+                        onChange={e => setCustomBarrier1Id(e.target.value || null)}
+                        className="w-full px-3 py-2 rounded-lg border border-maison-border bg-white text-xs font-medium"
+                      >
+                        <option value="">Aucune (Complexe 2 couches)</option>
+                        {BARRIER_LAYERS.map(l => <option key={l.id} value={l.id}>{l.nameFr}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-xs">
+                      <span className="font-semibold text-maison-slate">Couche 3 · Renfort Optionnel (4 couches)</span>
+                      <select
+                        value={customBarrier2Id || ''}
+                        onChange={e => setCustomBarrier2Id(e.target.value || null)}
+                        className="w-full px-3 py-2 rounded-lg border border-maison-border bg-white text-xs font-medium"
+                      >
+                        <option value="">Aucune (Standard 2-3 couches)</option>
+                        {BARRIER_LAYERS.map(l => <option key={l.id} value={l.id}>{l.nameFr}</option>)}
+                      </select>
+                    </label>
+                    <label className="space-y-1 text-xs">
+                      <span className="font-semibold text-maison-slate">Couche Interne · Soudure Alimentaire</span>
+                      <select
+                        value={customSealLayerId}
+                        onChange={e => setCustomSealLayerId(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-maison-border bg-white text-xs font-medium"
+                      >
+                        {SEAL_LAYERS.map(l => <option key={l.id} value={l.id}>{l.nameFr}</option>)}
+                      </select>
                     </label>
                   </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ===================== BLOC 2 : FINITIONS & ACCESSOIRES EN IMAGES ===================== */}
-          <div className={`${mobileTab === 'config' ? 'hidden sm:block' : 'block'} bg-[#0c1322] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3`}>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-              <span className="text-xs font-bold text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-400" />
-                <span>3. Finitions & Accessoires en Images (`gxcb`)</span>
-              </span>
-              <span className="text-[10px] text-slate-400">Combinables en temps réel</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {/* 1. Vernis Mat Global */}
-              <div
-                onClick={() => toggleFinish('matteVarnish')}
-                className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  finishesState.matteVarnish
-                    ? 'bg-sky-500/20 border-sky-400 text-sky-200 shadow-[0_0_12px_rgba(56,189,248,0.25)] ring-1 ring-sky-400/50'
-                    : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                }`}
-              >
-                <div className="shrink-0"><MatteVarnishIcon active={finishesState.matteVarnish} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[11px] truncate">Vernis Mat (满版哑油)</span>
-                    {finishesState.matteVarnish && <Check className="w-3.5 h-3.5 text-sky-400" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">+0.40 ¥/tour (min 100¥)</span>
-                </div>
-              </div>
-
-              {/* 2. Vernis Sélectif UV */}
-              <div
-                onClick={() => toggleFinish('spotUv')}
-                className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  finishesState.spotUv
-                    ? 'bg-purple-500/20 border-purple-400 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.25)] ring-1 ring-purple-400/50'
-                    : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                }`}
-              >
-                <div className="shrink-0"><SpotUvIcon active={finishesState.spotUv} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[11px] truncate">Vernis Sélectif (UV)</span>
-                    {finishesState.spotUv && <Check className="w-3.5 h-3.5 text-purple-400" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">+1.00 ¥/tour (min 400¥)</span>
-                </div>
-              </div>
-
-              {/* 3. Vernis Sélectif Épais 3D (厚UV) */}
-              <div
-                onClick={() => toggleFinish('thickUv')}
-                className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  finishesState.thickUv
-                    ? 'bg-pink-500/20 border-pink-400 text-pink-200 shadow-[0_0_12px_rgba(236,72,153,0.25)] ring-1 ring-pink-400/50'
-                    : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                }`}
-              >
-                <div className="shrink-0"><ThickUv3DIcon active={finishesState.thickUv} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[11px] truncate">Vernis 3D Épais (厚UV)</span>
-                    {finishesState.thickUv && <Check className="w-3.5 h-3.5 text-pink-400" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">+1.70 ¥/tour (min 500¥)</span>
-                </div>
-              </div>
-
-              {/* 4. Dorure à Chaud (烫金) */}
-              <div
-                onClick={() => toggleFinish('hotStamping')}
-                className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  finishesState.hotStamping
-                    ? 'bg-amber-500/20 border-amber-400 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/50'
-                    : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                }`}
-              >
-                <div className="shrink-0"><HotFoilIcon active={finishesState.hotStamping} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[11px] truncate">Dorure à Chaud (烫金)</span>
-                    {finishesState.hotStamping && <Check className="w-3.5 h-3.5 text-amber-400" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">
-                    {(finishesState.spotUv || finishesState.thickUv) && finishesState.hotStamping
-                      ? 'Combiné UV+Or (1.80¥)'
-                      : '+1.60 ¥/tour (min 400¥)'}
-                  </span>
-                </div>
-              </div>
-
-              {/* 5. Valve de Dégazage Café */}
-              <div
-                onClick={() => toggleFinish('degassingValve')}
-                className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  finishesState.degassingValve
-                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.25)] ring-1 ring-cyan-400/50'
-                    : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                }`}
-              >
-                <div className="shrink-0"><DegassingValveIcon active={finishesState.degassingValve} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[11px] truncate">Valve Café (透气阀)</span>
-                    {finishesState.degassingValve && <Check className="w-3.5 h-3.5 text-cyan-400" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">+0.22 ¥/pc (+0.6g)</span>
-                </div>
-              </div>
-
-              {/* 6. Poignée / Trou de Suspension */}
-              <div
-                onClick={() => toggleFinish('hangingHole')}
-                className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  finishesState.hangingHole
-                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-1 ring-emerald-400/50'
-                    : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                }`}
-              >
-                <div className="shrink-0"><HangingHoleIcon active={finishesState.hangingHole} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[11px] truncate">Poignée / Euro-Hole</span>
-                    {finishesState.hangingHole && <Check className="w-3.5 h-3.5 text-emerald-400" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">+0.105 ¥/pc (+7.6g)</span>
-                </div>
-              </div>
-
-              {/* 7. Bouchon / Bec Verseur (10mm / 16mm) */}
-              <div
-                onClick={() => toggleFinish('spout')}
-                className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  finishesState.spout !== 'none'
-                    ? 'bg-orange-500/20 border-orange-400 text-orange-200 shadow-[0_0_12px_rgba(249,115,22,0.25)] ring-1 ring-orange-400/50'
-                    : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                }`}
-              >
-                <div className="shrink-0"><SpoutFitmentIcon active={finishesState.spout !== 'none'} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[11px] truncate">
-                      {finishesState.spout === 'spout_16mm' ? 'Bouchon 16mm' : finishesState.spout === 'spout_10mm' ? 'Bouchon 10mm' : 'Bouchon / Bec'}
-                    </span>
-                    {finishesState.spout !== 'none' && <Check className="w-3.5 h-3.5 text-orange-400" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">
-                    {finishesState.spout === 'spout_16mm' ? '+0.22 ¥/pc (6.1g)' : '+0.195 ¥/pc (10/16mm)'}
-                  </span>
-                </div>
-              </div>
-
-              {/* 8. Découpe Forme Spéciale / Die-Cut (模切 / 异形袋) */}
-              <div
-                onClick={() => handleDimChange('cuttingType', dimensions.cuttingType === 'die_cut' ? 'double_cut' : 'die_cut')}
-                className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                  dimensions.cuttingType === 'die_cut'
-                    ? 'bg-rose-500/20 border-rose-400 text-rose-200 shadow-[0_0_12px_rgba(244,63,94,0.25)] ring-1 ring-rose-400/50'
-                    : 'bg-slate-900/70 border-slate-800/80 hover:border-slate-700 text-slate-300'
-                }`}
-              >
-                <div className="shrink-0"><DieCutShapeIcon active={dimensions.cuttingType === 'die_cut'} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[11px] truncate">Forme Spéciale (模切)</span>
-                    {dimensions.cuttingType === 'die_cut' && <Check className="w-3.5 h-3.5 text-rose-400" />}
-                  </div>
-                  <span className="text-[10px] text-slate-400 block">+450 ¥ moule +0.01¥/pc</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Sélecteur rapide diamètre bouchon si actif + Options Hélio (Fenêtre, Gaufrage, Adhésif) */}
-            <div className="pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-              <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={finishesState.hasWindow}
-                  onChange={() => toggleFinish('hasWindow')}
-                  className="accent-cyan-400"
-                />
-                <span>Fenêtre (`开窗`)</span>
-              </label>
-              <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={finishesState.hasEmbossing}
-                  onChange={() => toggleFinish('hasEmbossing')}
-                  className="accent-cyan-400"
-                />
-                <span>Gaufrage (`压纹`)</span>
-              </label>
-              <label className="flex items-center gap-1.5 text-slate-300 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={finishesState.hasAdhesiveStrip}
-                  onChange={() => toggleFinish('hasAdhesiveStrip')}
-                  className="accent-cyan-400"
-                />
-                <span>Bande adhésive (`自粘`)</span>
-              </label>
-            </div>
-          </div>
-
-          {/* ===================== BLOC 3 : URGENCE, DÉLAI, FACTURE TVA & LOGISTIQUE (suanfa.js) ===================== */}
-          <div className={`${mobileTab === 'finishes' ? 'hidden sm:block' : 'block'} bg-[#0c1322] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3`}>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80">
-              <span className="text-xs font-bold text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                <Truck className="w-4 h-4 text-emerald-400" />
-                <span>4. Délai, Facturation TVA & Frais de Port</span>
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                <span>Départ : {quote.imposition.estimatedShipDate} ({quote.imposition.leadTimeDays}j)</span>
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-              <div>
-                <label className="text-[10px] text-slate-400 block mb-1">Urgence Commande (`是否加急`) :</label>
-                <select
-                  value={dimensions.orderUrgency || 'normal'}
-                  onChange={e => handleDimChange('orderUrgency', e.target.value as OrderUrgency)}
-                  className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-400"
-                >
-                  <option value="normal">Standard (`常规订单` : 7-10j, 0 ¥)</option>
-                  <option value="urgent">Express Urgent (`加急订单` : 4-7j, +800 ¥)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] text-slate-400 block mb-1">Facturation & TVA (`发票类型`) :</label>
-                <select
-                  value={dimensions.invoiceType || 'no_invoice'}
-                  onChange={e => handleDimChange('invoiceType', e.target.value as InvoiceType)}
-                  className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-400"
-                >
-                  <option value="no_invoice">Hors Taxe / Sans facture (`不开票` 0%)</option>
-                  <option value="vat_invoice">Facture Spéciale TVA (`专用发票` +8%)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] text-slate-400 block mb-1">Frais de Port (`运费` — {quote.weightTotalKg} kg) :</label>
-                <select
-                  value={dimensions.shippingMode || 'none'}
-                  onChange={e => handleDimChange('shippingMode', e.target.value as ShippingMode)}
-                  className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-400"
-                >
-                  <option value="none">Départ Usine EXW / Franco (0 ¥)</option>
-                  <option value="china_domestic">Logistique Chine (12¥ + 1¥/kg = {12 + Math.max(0, quote.weightTotalKg - 1)} ¥)</option>
-                  <option value="custom">Forfait Port Personnalisé (¥)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-[10px] text-slate-400 block mb-1">
-                  {dimensions.shippingMode === 'custom' ? 'Montant Port (¥ CNY) :' : 'Autres Frais Manuels (`其他费用 qt00` ¥) :'}
-                </label>
-                {dimensions.shippingMode === 'custom' ? (
-                  <input
-                    type="number"
-                    min="0"
-                    value={dimensions.customShippingCny || 0}
-                    onChange={e => handleDimChange('customShippingCny', parseFloat(e.target.value) || 0)}
-                    className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-amber-300 font-mono outline-none"
-                  />
                 ) : (
-                  <input
-                    type="number"
-                    min="0"
-                    value={dimensions.extraFeeCny || 0}
-                    onChange={e => handleDimChange('extraFeeCny', parseFloat(e.target.value) || 0)}
-                    className="w-full bg-[#080d18] border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-amber-300 font-mono outline-none"
-                  />
+                  <div className="space-y-3">
+                    {/* Filtres Famille Matière */}
+                    <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                      {materialCategories.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setMaterialCategoryFilter(cat)}
+                          className={`shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                            materialCategoryFilter === cat
+                              ? 'bg-[#171614] text-white'
+                              : 'bg-maison-canvas border border-maison-border text-maison-slate hover:text-maison-ink'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[300px] overflow-y-auto pr-1">
+                      {filteredPresets.map((preset) => {
+                        const isSelected = materialPreset === preset.key;
+                        return (
+                          <button
+                            key={preset.key}
+                            type="button"
+                            onClick={() => setMaterialPreset(preset.key)}
+                            className={`p-3 rounded-xl border text-left transition-all ${
+                              isSelected
+                                ? 'border-[#171614] bg-maison-canvas/80 ring-1 ring-[#171614]'
+                                : 'border-maison-border bg-white hover:border-maison-borderStrong'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="text-xs font-semibold text-maison-ink leading-snug">
+                                {preset.name}
+                              </span>
+                              {preset.badge && (
+                                <span className="shrink-0 px-1.5 py-0.5 rounded bg-maison-brassLight text-[#7A5928] text-[10px] font-semibold">
+                                  {preset.badge}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-maison-muted mt-1 line-clamp-2">
+                              {preset.description}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
-              </div>
-            </div>
-          </div>
 
-        </div>
+                {technology === 'gravure' && !isSingleLayer && (
+                  <div className="pt-3 border-t border-maison-border flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-maison-ink">Procédé de contrecollage</span>
+                    <div className="inline-flex rounded-lg bg-maison-canvas p-0.5 border border-maison-border">
+                      <button
+                        type="button"
+                        onClick={() => setLaminationMethod('dry')}
+                        className={`px-3 py-1 rounded-md text-xs font-semibold ${
+                          laminationMethod === 'dry' ? 'bg-white text-maison-ink shadow-sm' : 'text-maison-slate'
+                        }`}
+                      >
+                        Sec Haute Barrière
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLaminationMethod('solvent_free')}
+                        className={`px-3 py-1 rounded-md text-xs font-semibold ${
+                          laminationMethod === 'solvent_free' ? 'bg-white text-maison-ink shadow-sm' : 'text-maison-slate'
+                        }`}
+                      >
+                        Sans Solvant Alimentaire
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </section>
 
-        {/* ===================== COLONNE DROITE : PILOTAGE MARGES, DÉTAIL USINE, DEVIS & GRAPHIQUES ===================== */}
-        <div className={`lg:col-span-7 space-y-4 ${
-          mobileTab === 'pricing' || mobileTab === 'charts' ? 'block' : 'hidden sm:block'
-        }`}>
-
-          {/* MODULE DE PILOTAGE DE VOS TARIFS & MARGES REVENTE */}
-          <div className={`${mobileTab === 'charts' ? 'hidden sm:block' : 'block'} bg-gradient-to-br from-[#101b33] via-[#0d1628] to-[#0a101d] border border-cyan-500/40 rounded-2xl p-4 sm:p-5 shadow-xl`}>
-            <div className="flex items-center justify-between pb-2.5 border-b border-cyan-500/20 mb-3">
-              <span className="text-xs font-bold text-cyan-200 tracking-wide uppercase flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-cyan-400" />
-                <span>PILOTAGE DE VOS TARIFS DE REVENTE & MARGES</span>
-              </span>
-              <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
-                1 € = {(1 / CNY_TO_EUR_RATE).toFixed(2)} ¥
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1.5 mb-3 text-xs font-semibold">
-              <button
-                type="button"
-                onClick={() => handleDimChange('resalePricingMode', 'percentage')}
-                className={`py-1.5 px-2 rounded-xl border text-center transition cursor-pointer ${
-                  dimensions.resalePricingMode === 'percentage'
-                    ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-md'
-                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700'
-                }`}
-              >
-                % Marge Brute
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDimChange('resalePricingMode', 'multiplier')}
-                className={`py-1.5 px-2 rounded-xl border text-center transition cursor-pointer ${
-                  dimensions.resalePricingMode === 'multiplier'
-                    ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-md'
-                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700'
-                }`}
-              >
-                Multiplicateur (x)
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDimChange('resalePricingMode', 'fixed_price')}
-                className={`py-1.5 px-2 rounded-xl border text-center transition cursor-pointer ${
-                  dimensions.resalePricingMode === 'fixed_price'
-                    ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-md'
-                    : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:border-slate-700'
-                }`}
-              >
-                Prix Fixe / pc
-              </button>
-            </div>
-
-            {dimensions.resalePricingMode === 'percentage' && (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300">Votre Taux de Marge Brute sur Prix de Vente :</span>
-                  <span className="text-base font-bold font-mono text-cyan-300">{dimensions.resaleMarginPercent}% (Coef x{(1 / (1 - (dimensions.resaleMarginPercent || 45) / 100)).toFixed(2)})</span>
-                </div>
-                <input
-                  type="range"
-                  min="5"
-                  max="85"
-                  step="1"
-                  value={dimensions.resaleMarginPercent || 45}
-                  onChange={e => handleDimChange('resaleMarginPercent', parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                />
-              </div>
-            )}
-
-            {dimensions.resalePricingMode === 'multiplier' && (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-300">Multiplicateur du Coût Usine :</span>
-                  <span className="text-base font-bold font-mono text-cyan-300">x{dimensions.resaleMultiplier}</span>
-                </div>
-                <input
-                  type="range"
-                  min="1.1"
-                  max="5.0"
-                  step="0.05"
-                  value={dimensions.resaleMultiplier || 1.85}
-                  onChange={e => handleDimChange('resaleMultiplier', parseFloat(e.target.value))}
-                  className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                />
-              </div>
-            )}
-
-            {dimensions.resalePricingMode === 'fixed_price' && (
-              <div>
-                <label className="text-xs text-slate-300 block mb-1">Votre Prix Unitaire Cible (€ HT / pièce) :</label>
-                <input
-                  type="number"
-                  min="0.02"
-                  max="10.0"
-                  step="0.01"
-                  value={dimensions.resaleFixedUnitPriceEur || 0.35}
-                  onChange={e => handleDimChange('resaleFixedUnitPriceEur', parseFloat(e.target.value) || 0.05)}
-                  className="w-full bg-[#080d18] border border-cyan-500/40 rounded-xl px-3 py-1.5 text-base text-cyan-300 font-mono outline-none"
-                />
-              </div>
-            )}
-
-            {/* 4 CARTES PRINCIPALES DE RÉSULTATS FINANCIERS */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 mt-3 border-t border-cyan-500/20">
-              <div className="bg-[#080d1a] border border-emerald-500/30 rounded-xl p-2.5 text-center">
-                <span className="text-[10px] text-slate-400 block uppercase">Votre Prix Vente</span>
-                <span className="text-base sm:text-lg font-bold font-mono text-emerald-400">
-                  {formatMoney(quote.resalePriceTotalEur, quote.resalePriceTotalCny, 0)}
-                </span>
-                <span className="text-[10px] text-emerald-300/80 block font-mono">
-                  {formatMoney(quote.resalePriceUnitEur, quote.resalePriceUnitCny, 3)} / pc
-                </span>
-              </div>
-
-              <div className="bg-[#080d1a] border border-amber-500/30 rounded-xl p-2.5 text-center">
-                <span className="text-[10px] text-slate-400 block uppercase">Votre Marge Nette</span>
-                <span className="text-base sm:text-lg font-bold font-mono text-amber-300">
-                  +{formatMoney(quote.grossProfitTotalEur, quote.grossProfitTotalCny, 0)}
-                </span>
-                <span className="text-[10px] text-amber-400 block font-bold">
-                  {quote.grossMarginPercent}% (+{quote.markupPercent}% markup)
-                </span>
-              </div>
-
-              <div className="bg-[#080d1a] border border-indigo-500/30 rounded-xl p-2.5 text-center">
-                <span className="text-[10px] text-slate-400 block uppercase">Catalogue Usine (`bj03`)</span>
-                <span className="text-base sm:text-lg font-bold font-mono text-indigo-300">
-                  {formatMoney(quote.beijincaiCatalogTotalEur, quote.beijincaiCatalogTotalCny, 0)}
-                </span>
-                <span className="text-[10px] text-slate-400 block font-mono">
-                  {formatMoney(quote.beijincaiCatalogUnitEur, quote.beijincaiCatalogUnitCny, 3)} / pc (x{quote.imposition.factoryTierMultiplier})
-                </span>
-              </div>
-
-              <div className="bg-[#080d1a] border border-rose-500/30 rounded-xl p-2.5 text-center">
-                <span className="text-[10px] text-slate-400 block uppercase">Coût Pur Atelier (`js_zcb`)</span>
-                <span className="text-base sm:text-lg font-bold font-mono text-rose-400">
-                  {formatMoney(quote.factoryCostTotalEur, quote.factoryCostTotalCny, 0)}
-                </span>
-                <span className="text-[10px] text-slate-400 block font-mono">
-                  {formatMoney(quote.factoryCostUnitEur, quote.factoryCostUnitCny, 3)} / pc
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* DÉTAIL COMPLET DES COÛTS USINE & IMPOSITION MACHINE */}
-          {showAdminDetails && (
-            <div className={`${mobileTab === 'charts' ? 'hidden sm:block' : 'block'} bg-[#0c1322] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3`}>
-              <div className="flex flex-wrap items-center justify-between pb-2 border-b border-slate-800/80 gap-2">
-                <span className="text-xs font-bold text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                  <PieIcon className="w-4 h-4 text-cyan-400" />
-                  <span>Décomposition Exacte Usine Miaobaojia (`suanfa.js`)</span>
-                </span>
-                <div className="flex items-center gap-2 text-[10px] font-mono">
-                  <span className="text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                    {quote.imposition.totalRotations} tours (`gg_lzs`)
-                  </span>
-                  <span className="text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                    {quote.weightUnitGrams}g/pc • {quote.weightTotalKg} kg
-                  </span>
-                </div>
-              </div>
-
-              {/* Grille complète de tous les postes de coûts suanfa.js */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="bg-[#080d18] p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">1. Films Matières (`js_cl`)</span>
-                  <span className="font-mono font-bold text-cyan-300">{quote.materialCostCny} ¥</span>
-                  <span className="text-[9px] text-slate-500 block">{quote.imposition.linearMeters}m ({quote.imposition.activeLayersCount} couches)</span>
-                </div>
-
-                <div className="bg-[#080d18] p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">2. Impression & UV (`js_ys`)</span>
-                  <span className="font-mono font-bold text-blue-300">{quote.printCostCny} ¥</span>
-                  <span className="text-[9px] text-slate-500 block">{quote.imposition.webPoses}×{quote.imposition.cylinderPoses} poses/tour</span>
-                </div>
-
-                <div className="bg-[#080d18] p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">3. Lamination (`js_fh`)</span>
-                  <span className="font-mono font-bold text-purple-300">{quote.laminationCostCny} ¥</span>
-                  <span className="text-[9px] text-slate-500 block">{quote.imposition.laminationPasses} passe(s) de colle</span>
-                </div>
-
-                <div className="bg-[#080d18] p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">4. Façonnage & Zip (`js_zd`)</span>
-                  <span className="font-mono font-bold text-pink-300">{quote.bagMakingCostCny} ¥</span>
-                  <span className="text-[9px] text-slate-500 block">{quote.imposition.unwindingMode}</span>
-                </div>
-
-                <div className="bg-[#080d18] p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">5. Accessoires & Cartons (`js_qt`)</span>
-                  <span className="font-mono font-bold text-amber-300">{quote.accessoriesCostCny} ¥</span>
-                  <span className="text-[9px] text-slate-500 block">Dont carton 0.7¥/kg</span>
-                </div>
-
-                <div className="bg-[#080d18] p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">6. Moule / Clichés (`mjf/版费`)</span>
-                  <span className="font-mono font-bold text-rose-400">
-                    {(quote.dieCutPlateCostCny + quote.cylindersCostCny).toFixed(0)} ¥
-                  </span>
-                  <span className="text-[9px] text-slate-500 block">
-                    {quote.dieCutPlateCostCny > 0 ? `Moule 463.5¥ ` : ''}
-                    {quote.cylindersCostCny > 0 ? `Cyl. ${quote.cylindersCostCny}¥` : '0 ¥ cliché'}
-                  </span>
-                </div>
-
-                <div className="bg-[#080d18] p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">7. Urgence & Port (`jjf/yf`)</span>
-                  <span className="font-mono font-bold text-emerald-300">
-                    {(quote.rushFeeCny + quote.shippingCostCny + quote.extraFeeCny).toFixed(0)} ¥
-                  </span>
-                  <span className="text-[9px] text-slate-500 block">
-                    Urg: {quote.rushFeeCny}¥ | Port: {quote.shippingCostCny}¥
-                  </span>
-                </div>
-
-                <div className="bg-[#080d18] p-2.5 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-400 block">8. Fiscalité TVA & Plancher</span>
-                  <span className="font-mono font-bold text-indigo-300">{quote.taxCostCny} ¥</span>
-                  <span className="text-[9px] text-slate-500 block">
-                    Profit min usine: +{quote.imposition.factoryMinProfitCny}¥
-                  </span>
-                </div>
-              </div>
-
-              {/* FICHE DEVIS COPIABLE EN 1 CLIC (spec FR & ZH) */}
-              <div className="pt-2 border-t border-slate-800/80">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Fiche Devis Automatique (`报价单 spec`) :</span>
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleCopyQuote('FR')}
-                      className="px-2.5 py-1 rounded-lg bg-cyan-500/20 border border-cyan-500/40 text-[10px] font-bold text-cyan-200 hover:bg-cyan-500/30 flex items-center gap-1 cursor-pointer"
-                    >
-                      <Copy className="w-3 h-3" />
-                      <span>{copiedLang === 'FR' ? 'Devis FR Copié !' : 'Copier Devis Client (FR)'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCopyQuote('ZH')}
-                      className="px-2.5 py-1 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-[10px] font-bold text-indigo-200 hover:bg-indigo-500/30 flex items-center gap-1 cursor-pointer"
-                    >
-                      <PackageCheck className="w-3 h-3" />
-                      <span>{copiedLang === 'ZH' ? 'Fiche Usine ZH Copiée !' : 'Copier Fiche Usine (ZH)'}</span>
-                    </button>
+              {/* BLOC 3 : FINITIONS & ACCESSOIRES PHOTO */}
+              <section className="bg-white border border-maison-border rounded-2xl p-5 sm:p-6 shadow-atelier space-y-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-maison-brassLight flex items-center justify-center text-maison-brass">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-maison-ink">
+                      3 · Finitions Tactiles & Accessoires
+                    </h3>
+                    <p className="text-xs text-maison-muted">
+                      Rendus macro atelier et options fonctionnelles haute valeur ajoutée
+                    </p>
                   </div>
                 </div>
-                <pre className="bg-[#070b14] border border-slate-800 rounded-xl p-2.5 text-[10px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed">
-                  {quote.imposition.quoteSpecFr}
-                </pre>
+
+                <FinishesStudio finishes={finishes} onChange={setFinishes} technology={technology} />
+              </section>
+
+              {/* BLOC 4 : LOGISTIQUE, DÉLAI & FISCALITÉ */}
+              <section className="bg-white border border-maison-border rounded-2xl p-5 sm:p-6 shadow-atelier space-y-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-maison-brassLight flex items-center justify-center text-maison-brass">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-maison-ink">
+                      4 · Logistique, Délai & Fiscalité Usine
+                    </h3>
+                    <p className="text-xs text-maison-muted">
+                      Transport intérieur vers transitaire (13 zones), fabrication prioritaire et TVA atelier
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2.5">
+                    <span className="text-xs font-semibold text-maison-ink block">Transport Usine (~{quote.weightTotalKg} kg)</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { key: 'none', label: 'EXW Usine (0 ¥)' },
+                        { key: 'guangdong_free', label: 'Guangdong Franco' },
+                        { key: 'regional_zone', label: 'Par Province Chine' },
+                        { key: 'custom', label: 'Fret Personnalisé' }
+                      ].map((m) => (
+                        <button
+                          key={m.key}
+                          type="button"
+                          onClick={() => setShippingMode(m.key as ShippingMode)}
+                          className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                            shippingMode === m.key
+                              ? 'border-[#171614] bg-[#171614] text-white'
+                              : 'border-maison-border bg-white text-maison-slate hover:border-maison-borderStrong'
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {shippingMode === 'regional_zone' && (
+                      <select
+                        value={shippingRegionId}
+                        onChange={e => setShippingRegionId(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl border border-maison-border bg-maison-canvas/50 text-xs font-medium text-maison-ink"
+                      >
+                        {FREIGHT_ZONES_CATALOG.map((z) => (
+                          <option key={z.id} value={z.id}>
+                            {z.nameFr} — {z.firstKgCny}¥ (1er kg) + {z.extraKgCny}¥/kg
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {shippingMode === 'custom' && (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step={50}
+                          value={customShippingCny}
+                          onChange={e => setCustomShippingCny(Math.max(0, Number(e.target.value)))}
+                          className="w-full px-3 py-2 rounded-xl border border-maison-border font-mono text-xs"
+                          placeholder="Montant fret en ¥"
+                        />
+                        <span className="text-xs font-mono text-maison-muted shrink-0">CNY ¥</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-xs font-semibold text-maison-ink block mb-1.5">Délai de production</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setOrderUrgency('normal')}
+                          className={`px-3 py-2 rounded-xl border text-xs font-semibold ${
+                            orderUrgency === 'normal' ? 'border-[#171614] bg-maison-canvas text-maison-ink' : 'border-maison-border bg-white text-maison-slate'
+                          }`}
+                        >
+                          Standard ({technology === 'gravure' ? '12j' : '7j'})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setOrderUrgency('urgent')}
+                          className={`px-3 py-2 rounded-xl border text-xs font-semibold ${
+                            orderUrgency === 'urgent' ? 'border-maison-brass bg-maison-brassLight text-[#7A5928]' : 'border-maison-border bg-white text-maison-slate'
+                          }`}
+                        >
+                          Express Prioritaire (4j)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-xs font-semibold text-maison-ink block mb-1">Facturation Chine</span>
+                        <select
+                          value={invoiceType}
+                          onChange={e => setInvoiceType(e.target.value as InvoiceType)}
+                          className="w-full px-2.5 py-2 rounded-xl border border-maison-border bg-white text-xs font-medium"
+                        >
+                          <option value="no_invoice">Sans TVA Usine</option>
+                          <option value="vat_invoice">Facture TVA (+8%)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <span className="text-xs font-semibold text-maison-ink block mb-1">Frais divers (¥)</span>
+                        <input
+                          type="number"
+                          min={0}
+                          value={extraFeeCny}
+                          onChange={e => setExtraFeeCny(Math.max(0, Number(e.target.value)))}
+                          className="w-full px-2.5 py-2 rounded-xl border border-maison-border bg-white font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* ------------------------------------------------------------- */}
+            {/* COLONNE DROITE : COCKPIT EXÉCUTIF & MARGE CLIENT (5 COLS)     */}
+            {/* ------------------------------------------------------------- */}
+            <aside className="lg:col-span-5 lg:sticky lg:top-24 space-y-5">
+              {/* CARTE TARIFAIRE PRINCIPALE */}
+              <div className="bg-white border border-maison-border rounded-2xl shadow-atelier overflow-hidden">
+                <div className="bg-[#171614] text-white p-6">
+                  <div className="flex items-center justify-between gap-2 text-xs text-white/70">
+                    <span className="uppercase tracking-[0.16em] font-semibold text-[#D6B178]">
+                      Tarif Client Proposé
+                    </span>
+                    <span className="font-mono">
+                      {quote.resolvedQuantity.toLocaleString('fr-FR')} pcs
+                    </span>
+                  </div>
+
+                  <div className="mt-4 flex items-baseline justify-between gap-4">
+                    <div>
+                      <div className="font-serif text-4xl sm:text-5xl font-semibold tracking-tight tabular-nums">
+                        {formatMainMoney(quote.resalePriceUnitEur, quote.resalePriceUnitCny, 3)}
+                      </div>
+                      <div className="text-xs text-white/65 font-mono mt-1 tabular-nums">
+                        par unité · {displayCurrency === 'EUR' ? `${quote.resalePriceUnitCny.toFixed(3)} ¥/u` : `${quote.resalePriceUnitEur.toFixed(3)} €/u`}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-[11px] uppercase tracking-wider text-white/60">Total Commande</div>
+                      <div className="font-mono text-xl sm:text-2xl font-semibold text-[#E8CFA6] tabular-nums">
+                        {formatMainMoney(quote.resalePriceTotalEur, quote.resalePriceTotalCny, 2)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bandeau 3 KPIs Exécutifs */}
+                  <div className="grid grid-cols-3 gap-2.5 mt-6 pt-4 border-t border-white/15 text-xs">
+                    <div>
+                      <span className="text-white/55 block text-[11px]">Marge Nette</span>
+                      <span className="font-mono font-semibold text-[#7ED4A8] tabular-nums">
+                        +{quote.grossProfitTotalEur.toFixed(0)} € ({quote.grossMarginPercent.toFixed(0)}%)
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-white/55 block text-[11px]">Revient Usine</span>
+                      <span className="font-mono font-semibold text-white tabular-nums">
+                        {quote.factoryCostUnitEur.toFixed(3)} €/u
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-white/55 block text-[11px]">Expédition</span>
+                      <span className="font-mono font-semibold text-white tabular-nums">
+                        {quote.weightTotalKg} kg · {quote.imposition.leadTimeDays}j
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CONTRÔLE STRATÉGIE DE REVENTE */}
+                <div className="p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-maison-slate">
+                      Pilotage de Votre Marge
+                    </span>
+                    <div className="inline-flex rounded-lg bg-maison-canvas p-0.5 border border-maison-border text-[11px] font-semibold">
+                      {[
+                        { k: 'percentage', l: '% Marge' },
+                        { k: 'multiplier', l: 'Coeff ×' },
+                        { k: 'fixed_price', l: 'Prix Fixe' }
+                      ].map((m) => (
+                        <button
+                          key={m.k}
+                          type="button"
+                          onClick={() => setResalePricingMode(m.k as any)}
+                          className={`px-2.5 py-1 rounded-md transition-colors ${
+                            resalePricingMode === m.k ? 'bg-white text-maison-ink shadow-sm' : 'text-maison-slate'
+                          }`}
+                        >
+                          {m.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {resalePricingMode === 'percentage' && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <input
+                          type="range"
+                          min={10}
+                          max={80}
+                          step={1}
+                          value={resaleMarginPercent}
+                          onChange={e => setResaleMarginPercent(Number(e.target.value))}
+                          className="atelier-slider flex-1"
+                        />
+                        <div className="flex items-center border border-maison-border rounded-xl px-2.5 py-1.5 bg-maison-canvas/50 w-20">
+                          <input
+                            type="number"
+                            min={1}
+                            max={95}
+                            value={resaleMarginPercent}
+                            onChange={e => setResaleMarginPercent(Math.min(95, Math.max(1, Number(e.target.value))))}
+                            className="w-full bg-transparent font-mono text-sm font-semibold text-right focus:outline-none"
+                          />
+                          <span className="text-xs text-maison-muted ml-1">%</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-1.5">
+                        {[30, 40, 45, 55, 65].map((pct) => (
+                          <button
+                            key={pct}
+                            type="button"
+                            onClick={() => setResaleMarginPercent(pct)}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ${
+                              resaleMarginPercent === pct
+                                ? 'bg-maison-emeraldLight text-maison-emerald border border-maison-emerald/30'
+                                : 'bg-maison-canvas border border-maison-border text-maison-slate hover:text-maison-ink'
+                            }`}
+                          >
+                            {pct}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {resalePricingMode === 'multiplier' && (
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={1.1}
+                        max={4.0}
+                        step={0.05}
+                        value={resaleMultiplier}
+                        onChange={e => setResaleMultiplier(Number(e.target.value))}
+                        className="atelier-slider flex-1"
+                      />
+                      <div className="flex items-center border border-maison-border rounded-xl px-3 py-1.5 bg-maison-canvas/50 w-24">
+                        <span className="text-xs text-maison-muted mr-1">×</span>
+                        <input
+                          type="number"
+                          step="0.05"
+                          min={1.01}
+                          value={resaleMultiplier}
+                          onChange={e => setResaleMultiplier(Math.max(1.01, Number(e.target.value)))}
+                          className="w-full bg-transparent font-mono text-sm font-semibold text-right focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {resalePricingMode === 'fixed_price' && (
+                    <div className="flex items-center justify-between gap-3 bg-maison-canvas/50 border border-maison-border rounded-xl p-3">
+                      <span className="text-xs font-medium text-maison-slate">Prix Unitaire Cible (€ HT)</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min={0.01}
+                        value={resaleFixedUnitPriceEur}
+                        onChange={e => setResaleFixedUnitPriceEur(Math.max(0.01, Number(e.target.value)))}
+                        className="w-28 px-3 py-1.5 rounded-lg border border-maison-border bg-white font-mono text-sm font-semibold text-right"
+                      />
+                    </div>
+                  )}
+
+                  {/* Ventilation Structurelle du Prix */}
+                  <div className="pt-3 border-t border-maison-border space-y-2.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-maison-ink">Répartition du Prix de Vente</span>
+                      <span className="font-mono text-maison-emerald font-semibold tabular-nums">
+                        +{quote.grossProfitUnitEur.toFixed(3)} €/u net
+                      </span>
+                    </div>
+
+                    <div className="h-3 w-full rounded-full overflow-hidden flex bg-maison-stone">
+                      <div style={{ width: `${pctMaterial}%` }} className="bg-[#171614]" title={`Matières ${pctMaterial}%`} />
+                      <div style={{ width: `${pctPrint}%` }} className="bg-[#9E7840]" title={`Impression & Cylindres ${pctPrint}%`} />
+                      <div style={{ width: `${pctConv}%` }} className="bg-[#787166]" title={`Façonnage & Finitions ${pctConv}%`} />
+                      <div style={{ width: `${pctMisc}%` }} className="bg-[#C8BFA9]" title={`Logistique & Taxes ${pctMisc}%`} />
+                      <div style={{ width: `${pctProfit}%` }} className="bg-[#1B5E42]" title={`Votre Marge ${pctProfit}%`} />
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-1.5 gap-x-2 text-[11px] text-maison-slate pt-1">
+                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#171614]" /> Matière ({pctMaterial}%)</div>
+                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#9E7840]" /> Impr. ({pctPrint}%)</div>
+                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#787166]" /> Façon. ({pctConv}%)</div>
+                      <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#C8BFA9]" /> Logist. ({pctMisc}%)</div>
+                      <div className="flex items-center gap-1.5 font-semibold text-maison-emerald"><span className="w-2 h-2 rounded-full bg-[#1B5E42]" /> Marge ({pctProfit}%)</div>
+                    </div>
+                  </div>
+
+                  {/* Boutons d'Export & Action */}
+                  <div className="pt-3 border-t border-maison-border space-y-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setProposalOpen(true)}
+                      className="w-full py-3 px-4 rounded-xl bg-[#171614] hover:bg-maison-brass text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <FileText className="w-4 h-4" />
+                      Générer Proposition Client / PDF
+                    </button>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => copyQuoteText('fr')}
+                        className="py-2.5 px-3 rounded-xl border border-maison-border bg-maison-canvas/60 hover:bg-maison-stone text-xs font-semibold text-maison-ink flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        {copiedBanner === 'fr' ? <Check className="w-3.5 h-3.5 text-maison-emerald" /> : <Copy className="w-3.5 h-3.5 text-maison-slate" />}
+                        {copiedBanner === 'fr' ? 'Devis FR copié' : 'Copier Devis FR'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => copyQuoteText('zh')}
+                        className="py-2.5 px-3 rounded-xl border border-maison-border bg-maison-canvas/60 hover:bg-maison-stone text-xs font-semibold text-maison-ink flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        {copiedBanner === 'zh' ? <Check className="w-3.5 h-3.5 text-maison-emerald" /> : <Copy className="w-3.5 h-3.5 text-maison-slate" />}
+                        {copiedBanner === 'zh' ? 'Fiche ZH copiée' : 'Bon Usine ZH'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* GRAPHIQUES DE DÉGRESSIVITÉ PAR VOLUME */}
-          <div className={`${mobileTab === 'pricing' ? 'hidden sm:block' : 'block'} bg-[#0c1322] border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-xl`}>
-            <div className="flex items-center justify-between pb-2 border-b border-slate-800/80 mb-4">
-              <span className="text-xs font-bold text-slate-200 uppercase tracking-wide flex items-center gap-1.5">
-                <BarChart3 className="w-4 h-4 text-cyan-400" />
-                <span>Simulation de Dégressivité par Volume (Vente vs Catalogue Usine vs Coût Pur)</span>
-              </span>
-              <span className="text-[10px] text-slate-400">Prix unitaire en €</span>
-            </div>
-
-            <div className="h-52 sm:h-60 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={tierData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="label" stroke="#64748b" fontSize={11} />
-                  <YAxis stroke="#64748b" fontSize={11} tickFormatter={(v) => `${v}€`} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '8px', fontSize: '11px' }}
-                    formatter={(val: any) => [`${Number(val).toFixed(3)} € / pc`, '']}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
-                  <Bar dataKey="salePriceEur" name="Votre Prix Vente / pc" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="catalogPriceEur" name="Prix Catalogue Usine / pc" fill="#6366f1" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="factoryCostEur" name="Coût Pur Atelier / pc" fill="#ec4899" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            </aside>
           </div>
+        )}
 
-        </div>
+        {activeTab === 'tiers' && (
+          <ComparisonTiersTab
+            baseDim={dimPayload}
+            onSelectTier={(tech, q) => {
+              setTechnology(tech);
+              setQuantity(q);
+              setActiveTab('configurator');
+            }}
+          />
+        )}
+
+        {activeTab === 'tools' && (
+          <WorkshopToolsTab
+            defaultBagType={bagType}
+            defaultWidthCm={widthCm}
+            defaultHeightCm={heightCm}
+            defaultGussetCm={bottomCm}
+            defaultThicknessSilk={quote.imposition.actualThicknessSilk}
+            defaultQuantity={quantity}
+            onApplyQuantityToQuote={(q) => {
+              setQuantity(q);
+              setActiveTab('configurator');
+            }}
+          />
+        )}
+
+        {activeTab === 'audit' && <FactoryAuditTab quote={quote} />}
       </main>
 
-      {/* ===================== BARRE FLOTTANTE MOBILE DE PRIX ===================== */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-[#090f1d]/95 backdrop-blur border-t border-slate-800 px-4 py-2.5 flex items-center justify-between z-50 shadow-[0_-4px_15px_rgba(0,0,0,0.5)]">
+      {/* ================================================================= */}
+      {/* BARRE MOBILE COLLANTE (EXPÉRIENCE MOBILE HAUTE FACTURE)           */}
+      {/* ================================================================= */}
+      <div className="no-print lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-maison-border shadow-sticky-bar px-4 py-3 flex items-center justify-between gap-3">
         <div>
-          <span className="text-[9px] text-slate-400 block uppercase">Total Revente ({dimensions.quantity} pcs)</span>
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-base font-bold font-mono text-emerald-400">
-              {formatMoney(quote.resalePriceTotalEur, quote.resalePriceTotalCny, 0)}
+          <div className="text-[11px] text-maison-muted font-medium">
+            {quote.resolvedQuantity.toLocaleString('fr-FR')} pcs · Marge {quote.grossMarginPercent.toFixed(0)}%
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono text-base font-bold text-maison-ink tabular-nums">
+              {formatMainMoney(quote.resalePriceUnitEur, quote.resalePriceUnitCny, 3)}/u
             </span>
-            <span className="text-xs font-mono text-cyan-300">
-              ({formatMoney(quote.resalePriceUnitEur, quote.resalePriceUnitCny, 3)}/pc)
+            <span className="font-mono text-xs font-semibold text-maison-brass tabular-nums">
+              Total {formatMainMoney(quote.resalePriceTotalEur, quote.resalePriceTotalCny, 0)}
             </span>
           </div>
         </div>
-
-        <div className="text-right">
-          <span className="text-[9px] text-slate-400 block uppercase">Votre Marge Brute</span>
-          <span className="text-sm font-bold font-mono text-amber-300">
-            +{formatMoney(quote.grossProfitTotalEur, quote.grossProfitTotalCny, 0)} ({quote.grossMarginPercent}%)
-          </span>
-        </div>
+        <button
+          type="button"
+          onClick={() => setProposalOpen(true)}
+          className="px-4 py-2.5 rounded-xl bg-[#171614] text-white text-xs font-semibold shrink-0 shadow-sm"
+        >
+          Devis PDF
+        </button>
       </div>
+
+      {/* MODALE PROPOSITION COMMERCIALE IMPRIMABLE */}
+      <ProposalPrintModal
+        open={proposalOpen}
+        onClose={() => setProposalOpen(false)}
+        dim={dimPayload}
+        quote={quote}
+      />
     </div>
   );
 }
+
+export default App;

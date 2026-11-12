@@ -2,28 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #070b13;
-  color: #f1f5f9;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
+@layer base {
+  body {
+    background-color: #F6F4EF;
+    color: #171614;
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
 }
 
-/* Custom cyber scrollbar */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Raffinement discret pour les scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #EDE9DF;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+  background: #C7BFA9;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #06b6d4;
+  background: #9E7840;
 }
 
+/* Curseur de marge sur-mesure */
+input[type="range"].atelier-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #E4DFD3;
+  border-radius: 9999px;
+  outline: none;
+}
+
+input[type="range"].atelier-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #171614;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(23, 22, 20, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+input[type="range"].atelier-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background: #9E7840;
+}
+
+/* Masquer scrollbar sur les rubans horizontaux mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Feuille d'impression Devis Client PDF */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #171614 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only-sheet {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
