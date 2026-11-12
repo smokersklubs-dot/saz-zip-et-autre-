@@ -489,27 +489,27 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
   const yc_dj01 = Number(yscItem.textField_nohaph9) || 0;
   const yc_md01 = Number(yscItem.textField_2xfswer) || 0;
   const yc_hd01 = Number(yscItem.textField_09zzudc) || 0;
-  const yc_jc01 = yscItem.textField_m3n9285l || '';
+  const yc_jc01 = yscItem.textField_e5iy0au || yscItem.textField_m3n9285l || '';
 
   const zc1_dj01 = Number(zgc1Item.textField_nohaph9) || 0;
   const zc1_md01 = Number(zgc1Item.textField_2xfswer) || 0;
   const zc1_hd01 = Number(zgc1Item.textField_09zzudc) || 0;
-  const zc1_jc01 = zgc1Item.textField_m3n9285l || '';
+  const zc1_jc01 = zgc1Item.textField_e5iy0au || zgc1Item.textField_m3n9285l || '';
 
   const zc2_dj01 = Number(zgc2Item.textField_nohaph9) || 0;
   const zc2_md01 = Number(zgc2Item.textField_2xfswer) || 0;
   const zc2_hd01 = Number(zgc2Item.textField_09zzudc) || 0;
-  const zc2_jc01 = zgc2Item.textField_m3n9285l || '';
+  const zc2_jc01 = zgc2Item.textField_e5iy0au || zgc2Item.textField_m3n9285l || '';
 
   const zc3_dj01 = Number(zgc3Item.textField_nohaph9) || 0;
   const zc3_md01 = Number(zgc3Item.textField_2xfswer) || 0;
   const zc3_hd01 = Number(zgc3Item.textField_09zzudc) || 0;
-  const zc3_jc01 = zgc3Item.textField_m3n9285l || '';
+  const zc3_jc01 = zgc3Item.textField_e5iy0au || zgc3Item.textField_m3n9285l || '';
 
   const rc_dj01 = Number(rfcItem.textField_nohaph9) || 0;
   const rc_md01 = Number(rfcItem.textField_2xfswer) || 0;
   const rc_hd01 = Number(rfcItem.textField_09zzudc) || 0;
-  const rc_jc01 = rfcItem.textField_m3n9285l || '';
+  const rc_jc01 = rfcItem.textField_e5iy0au || rfcItem.textField_m3n9285l || '';
 
   const activeLayerCodes = [yc_jc01, zc1_jc01, zc2_jc01, zc3_jc01, rc_jc01].filter(Boolean);
   const activeLayersCount = Math.max(1, activeLayerCodes.length);
@@ -761,12 +761,12 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
     } else {
       const passLabel = `${laminationPasses}次`;
       const fhRow = fhcsTable.find((r: any) =>
-        (r.selectField_mglxnkdf === passLabel) || (r.selectField_mgka3e9e === passLabel)
+        (r.selectField_mglxnkda === passLabel) || (r.selectField_mglxnkdf === passLabel) || (r.selectField_mgka3e9e === passLabel)
       ) || fhcsTable[Math.min(laminationPasses - 1, fhcsTable.length - 1)] || {};
 
-      const fhcs01 = Number(fhRow.numberField_mglxnkdg ?? fhRow.numberField_mgka3e9f) || (laminationPasses === 1 ? 150 : laminationPasses === 2 ? 150 : laminationPasses === 3 ? 200 : 250);
-      const fhcs02 = Number(fhRow.numberField_mglxnkdh ?? fhRow.numberField_mgka3e9g) || 700;
-      const fhcs03 = Number(fhRow.numberField_mglxnkdi ?? fhRow.numberField_mgka3e9h) || (laminationPasses === 1 ? 0.25 : laminationPasses === 2 ? 0.50 : laminationPasses === 3 ? 0.70 : 0.85);
+      const fhcs01 = Number(fhRow.numberField_mglxnkdb ?? fhRow.numberField_mglxnkdg ?? fhRow.numberField_mgka3e9f) || (laminationPasses === 1 ? 150 : laminationPasses === 2 ? 150 : laminationPasses === 3 ? 200 : 250);
+      const fhcs02 = Number(fhRow.numberField_mglxnkdc ?? fhRow.numberField_mglxnkdh ?? fhRow.numberField_mgka3e9g) || 700;
+      const fhcs03 = Number(fhRow.numberField_mglxnkdd ?? fhRow.numberField_mglxnkdi ?? fhRow.numberField_mgka3e9h) || (laminationPasses === 1 ? 0.25 : laminationPasses === 2 ? 0.50 : laminationPasses === 3 ? 0.70 : 0.85);
       js_fh = M((clms <= fhcs02 ? fhcs01 : fhcs01 + (clms - fhcs02) * fhcs03) * (1 + qt19 / 100), 2);
     }
   }
@@ -808,7 +808,7 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
   }
 
   const wasteFactorWeight = dim.bagType === 'roll_film' ? 1.02 : 1.15;
-  const singleWeightG = M(((unfoldedAreaCm2 / 10000) * totalBasisWeight * wasteFactorWeight) + accessoryWeightG, 3);
+  const singleWeightG = M(((unfoldedAreaCm2 / 10000) * (totalBasisWeight * 10) * wasteFactorWeight) + accessoryWeightG, 2);
   const totalWeightKg = Math.max(1, Math.round((singleWeightG * qty) / 1000));
 
   const xz_cost = spoutConfig.unitCost > 0 ? MAX(spoutConfig.minFee, spoutConfig.unitCost * qty) : 0;
@@ -879,7 +879,7 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
     const minRot = Number(row.numberField_mo9fep08) || 0;
     const maxRot = Number(row.numberField_mo9fep09) || 999999;
     if (gg_lzs >= minRot && gg_lzs <= maxRot) {
-      qt09 = Number(row.numberField_mo9fep0b) || 150;
+      qt09 = Number(row.numberField_mo9fep0a ?? row.numberField_mo9fep0b) || 150;
       break;
     }
   }
@@ -966,7 +966,7 @@ export function calculateMylarQuote(dim: BagDimensions): QuoteBreakdown {
     `袋型：${bagDef.nameZh}${isSingleLayer ? '(单层)' : '(复合)'}(${zipOpt.labelZh})(${kg_sqmq})`,
     `尺寸：宽${gg_k}*高${gg_g}${gg_d > 0 ? `*底/琴${gg_d}` : ''}cm`,
     `材质结构：${layersSummaryZh}`,
-    `印刷工艺：${isGravure ? `凹版${cylinderCount}色(版费${totalCylindersCost}元)` : (ysItem.selectField_l791w79 || 'CMYK单白')}+${uvConfig.nameZh}`,
+    `印刷工艺：${isGravure ? `凹版${cylinderCount}色(版费${totalCylindersCost}元)` : (ysItem.textField_dzk31za || ysItem.selectField_l791w79 || 'CMYK单白')}+${uvConfig.nameZh}`,
     `配件：吸嘴(${spoutConfig.nameZh})、手提扣(${handleConfig ? handleConfig.nameZh : '无'})、透气阀(${valveConfig ? '有' : '无'})`,
     `数量：${qty}个 (${gg_ks}款)`,
     `单价：${resalePriceUnitCny.toFixed(3)}元/个 | 总价：${resalePriceTotalCny.toFixed(0)}元`,
