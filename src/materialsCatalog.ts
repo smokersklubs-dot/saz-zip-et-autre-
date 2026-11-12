@@ -17,9 +17,11 @@ export interface MaterialStructurePreset {
   category: string;
   name: string;
   description: string;
-  printLayer: string; // ID instance clk
-  barrierLayer: string | null; // ID instance clk (ou null si 2 couches)
-  sealLayer: string; // ID instance clk
+  printLayer: string; // ID instance clk (Couche 1)
+  barrierLayer: string | null; // ID instance clk (Couche 2 ou null si 2 couches)
+  barrierLayer2?: string | null; // ID instance clk (Couche 3 optionnelle - 4 couches)
+  barrierLayer3?: string | null; // ID instance clk (Couche 4 optionnelle - 5 couches)
+  sealLayer: string; // ID instance clk (Couche finale thermosoudable)
   totalThicknessSilk: number; // Épaisseur en丝 (1丝 = 10µm)
   badge?: string;
 }
@@ -698,5 +700,45 @@ export const ALL_STRUCTURE_PRESETS: Record<string, MaterialStructurePreset> = {
     sealLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMX5A1', // CPP60
     totalThicknessSilk: 8.2,
     badge: '121°C'
+  },
+
+  // --- FAMILLE 10 : MULTI-COUCHES EXTRÊMES (4 ET 5 COUCHES) ---
+  quad_pet_al_pa_pe: {
+    key: 'quad_pet_al_pa_pe',
+    category: 'Multi-Couches Extrêmes (4 & 5 Couches)',
+    name: '4 Couches Militaire / Café Grain Pro (PET15 + AL7 + PA15 + PE100)',
+    description: 'Quadruple lamination (3 passes) combinant Aluminium pur et Nylon anti-perforation.',
+    printLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMM36A1', // PET15
+    barrierLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMB6A1', // AL7
+    barrierLayer2: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMM96A1', // PA15
+    sealLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMN5A1', // PE100
+    totalThicknessSilk: 13.7,
+    badge: '4 Couches'
+  },
+  quad_kraft_vmpet_pa_pe: {
+    key: 'quad_kraft_vmpet_pa_pe',
+    category: 'Multi-Couches Extrêmes (4 & 5 Couches)',
+    name: '4 Couches Kraft Blindé (Kraft50g + VMPET12 + PA15 + PE100)',
+    description: 'Kraft naturel renforcé par du Nylon et de l\'aluminium métallisé pour charges lourdes (1kg-5kg).',
+    printLayer: 'FINST-HOE66X61EH24X6HEL84R97M96ASB301QNZTMMQ87', // Kraft50g
+    barrierLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMM76A1', // VMPET12
+    barrierLayer2: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMM96A1', // PA15
+    sealLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMN5A1', // PE100
+    totalThicknessSilk: 21.2,
+    badge: '4 Couches Kraft'
+  },
+  penta_extreme_barrier: {
+    key: 'penta_extreme_barrier',
+    category: 'Multi-Couches Extrêmes (4 & 5 Couches)',
+    name: '5 Couches Blindage Absolu (MOPP25 + Kraft35g + AL7 + PA15 + PE120)',
+    description: 'Quintuple structure (4 passes de lamination) : toucher mat, rigidité kraft, alu pur, nylon et PE120.',
+    printLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMZ5A1', // MOPP25
+    barrierLayer: 'FINST-AZI66271NFI8INYALJYKX7QJ3O6732BI2P6TMCQW', // Kraft35g
+    barrierLayer2: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMB6A1', // AL7
+    barrierLayer3: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMM96A1', // PA15
+    sealLayer: 'FINST-4XC66W81J943YA9OOKC0ODX7Y7RY28BU4PEMMP5A1', // PE120
+    totalThicknessSilk: 23.2,
+    badge: '5 Couches Max'
   }
 };
+

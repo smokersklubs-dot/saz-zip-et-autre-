@@ -138,3 +138,32 @@ export function ZipLockIcon({ active = false, className = 'w-7 h-7' }: { active?
   );
 }
 
+// 8. Vernis Sélectif Épais 3D (Thick 3D Embossed UV - 厚UV)
+export function ThickUv3DIcon({ active = false, className = 'w-7 h-7' }: { active?: boolean; className?: string }) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" className={className}>
+      <rect x="4" y="4" width="32" height="32" rx="8" fill={active ? 'rgba(236, 72, 153, 0.15)' : 'rgba(30, 41, 59, 0.6)'} stroke={active ? '#ec4899' : '#475569'} strokeWidth="1.8" />
+      {/* Couche basse 3D */}
+      <path d="M9 24 L20 30 L31 24 L20 18 Z" fill={active ? '#831843' : '#1e293b'} stroke={active ? '#f472b6' : '#64748b'} strokeWidth="1.4" />
+      {/* Couche intermédiaire relief */}
+      <path d="M9 20 L20 26 L31 20 L20 14 Z" fill={active ? '#be185d' : '#334155'} stroke={active ? '#f9a8d4' : '#94a3b8'} strokeWidth="1.4" />
+      {/* Dôme supérieur brillant 3D */}
+      <path d="M9 16 L20 22 L31 16 L20 10 Z" fill={active ? '#ec4899' : '#475569'} stroke="#ffffff" strokeWidth="1.5" />
+      <text x="20" y="18" textAnchor="middle" fill="#ffffff" fontSize="6.5" fontWeight="bold">3D</text>
+    </svg>
+  );
+}
+
+// 9. Découpe sur-mesure / Sac de Forme Spéciale (Die-Cut 模切 / 异形袋)
+export function DieCutShapeIcon({ active = false, className = 'w-7 h-7' }: { active?: boolean; className?: string }) {
+  return (
+    <svg viewBox="0 0 40 40" fill="none" className={className}>
+      <rect x="4" y="4" width="32" height="32" rx="8" fill={active ? 'rgba(244, 63, 94, 0.15)' : 'rgba(30, 41, 59, 0.6)'} stroke={active ? '#f43f5e' : '#475569'} strokeWidth="1.8" />
+      {/* Contour de découpe créatif en pointillés + silhouette bouteille/forme */}
+      <path d="M16 8 L24 8 L24 13 C28 15, 30 19, 29 25 C28 29, 26 32, 20 32 C14 32, 12 29, 11 25 C10 19, 12 15, 16 13 Z" fill={active ? '#881337' : '#1e293b'} stroke={active ? '#fb7185' : '#94a3b8'} strokeWidth="1.8" strokeDasharray="3 1.5" />
+      <circle cx="20" cy="22" r="3" fill={active ? '#fda4af' : '#64748b'} />
+    </svg>
+  );
+}
+
+
