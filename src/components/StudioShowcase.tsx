@@ -157,12 +157,12 @@ export const StudioShowcase: React.FC<StudioShowcaseProps> = ({
             </div>
 
             {/* Architecture Multicouche vs Monocouche */}
-            <div className="flex items-center justify-between gap-2 text-[11px]">
-              <div className="inline-flex rounded-lg bg-[#080d18] p-0.5 border border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+              <div className="inline-flex rounded-lg bg-[#080d18] p-0.5 border border-slate-800 shrink-0">
                 <button
                   type="button"
                   onClick={() => onToggleSingleLayer(false)}
-                  className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                  className={`px-2 py-1 rounded-md font-semibold transition-all cursor-pointer ${
                     !isSingleLayer
                       ? 'bg-slate-800 text-cyan-300 border border-slate-700'
                       : 'text-slate-400 hover:text-slate-200'
@@ -173,7 +173,7 @@ export const StudioShowcase: React.FC<StudioShowcaseProps> = ({
                 <button
                   type="button"
                   onClick={() => onToggleSingleLayer(true)}
-                  className={`px-2.5 py-1 rounded-md font-semibold transition-all ${
+                  className={`px-2 py-1 rounded-md font-semibold transition-all cursor-pointer ${
                     isSingleLayer
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                       : 'text-slate-400 hover:text-slate-200'
@@ -182,9 +182,9 @@ export const StudioShowcase: React.FC<StudioShowcaseProps> = ({
                   Monocouche (1 film)
                 </button>
               </div>
-              <span className="text-[10px] text-slate-400 truncate flex items-center gap-1">
+              <span className="min-w-0 max-w-full text-[10px] text-slate-300 bg-[#080d18] border border-slate-800 rounded-md px-2 py-1 flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-cyan-400 shrink-0" />
-                {isSingleLayer ? '0 passe colle' : presetName.split('(')[0].trim()}
+                <span className="truncate">{isSingleLayer ? '0 passe colle' : presetName.split('(')[0].trim()}</span>
               </span>
             </div>
           </div>
